@@ -10,8 +10,8 @@ import os
 import argparse
 import re
 import time
-from metadata import metadata
-from metadata import mylog
+from backup import metadata
+from backup import mylog
 
 DEFAULT_SOURCE = 'personal'
 DEFAULT_BUCKET = 'mcombs-backup'
