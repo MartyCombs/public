@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #=============================================================================#
-# Project Docs :
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
 # Ticket       :
-# Source Ctl   :
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/create_metadata.py
 #=============================================================================#
 
 import sys
@@ -23,7 +23,9 @@ class CreateMetadata(object):
 
         loglevel   : Set logging level [DEF: 'INFO']
 
-        source     :
+        source     : Source tag.
+
+        bucket     : S3 bucket where file and metadata file are stored.
 
     '''
 
