@@ -48,8 +48,8 @@ class CreateMetadata(object):
         self.top_level = os.path.dirname(os.path.realpath(sys.argv[0]))
 
         self.md_filelist = {}
-        self.source = self.set_source(source)
-        self.bucket = self.set_bucket(bucket)
+        self.set_source(source)
+        self.set_bucket(bucket)
         return
 
 
@@ -57,10 +57,7 @@ class CreateMetadata(object):
     def set_source(self, source=None):
         '''Set source for metadate file
         '''
-        if source:
-            self.source = source
-        else:
-            self.source = CreateMetadata.DEFAULT_SOURCE
+        if source: self.source = source
         return
 
 
@@ -68,10 +65,7 @@ class CreateMetadata(object):
     def set_bucket(self, bucket=None):
         '''Set bucket for metadate file
         '''
-        if bucket:
-            self.bucket = bucket
-        else:
-            self.bucket = CreateMetadata.DEFAULT_BUCKET
+        if bucket: self.bucket = bucket
         return
 
 
@@ -94,7 +88,7 @@ class CreateMetadata(object):
             basename = os.path.basename(fullpath)
             # Skip '.meta' files passed.
             if ext == '.meta':
-                self.log.info('Skipping "{}"'.format(fullpath))
+                self.log.debug('Skipping "{}"'.format(fullpath))
                 continue
 
             # Unless we --force re-creation, skip any files which already
@@ -114,7 +108,7 @@ class CreateMetadata(object):
         each file passed.
         '''
         for f in filelist:
-            self.log.info('Building metadata for "{}"'.format(os.path.basename(f)))
+            self.log.debug('Building metadata for "{}"'.format(os.path.basename(f)))
             md = MetaData(debug=self.debug, loglevel=self.loglevel,
                           showprogress=self.showprogress)
             md_fullpath = f + '.meta'
@@ -178,6 +172,10 @@ def main():
         s.log.info('Writing "{}"'.format(metafile))
         with open(metafile, 'w') as fw:
             fw.write(metadata_files[metafile])
+            s.log.debug('Contents\n{}\n{}\n{}'.format(
+                '='*76,
+                metadata_files[metafile],
+                '='*76))
         fw.close()
     return
 

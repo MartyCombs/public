@@ -122,7 +122,7 @@ class MetaData(object):
             file_checksum
             file_checksum_method
         '''
-        self.log.info('Adding file stats')
+        self.log.debug('Adding file stats')
         self.stats['file_size_bytes'] = os.path.getsize(self.fullpath)
         self.stats['file_checksum_method'] = 'sha512'
         self._calculate_checksum()
@@ -131,7 +131,7 @@ class MetaData(object):
 
 
     def _calculate_checksum(self):
-        self.log.info('Calculating SHA512 sum of "{}"'.format(self.filename))
+        self.log.debug('Calculating SHA512 sum of "{}"'.format(self.filename))
 
         # Set up a progress bar to let the user know we're still doing something.
         readbuff = 65536
