@@ -31,7 +31,7 @@ class CreateMetadata(object):
 
 
     DEFAULT_SOURCE = 'personal'
-    DEFAULT_BUCKET = 'mcombs-backup'
+    DEFAULT_BUCKET = 'backup'
 
 
     def __init__(self, debug=None, loglevel='INFO',
