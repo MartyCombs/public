@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #=============================================================================#
-# Project Docs :
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
 # Ticket       :
-# Source Ctl   :
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/create_metadata.py
 #=============================================================================#
 
 import sys
@@ -10,34 +10,128 @@ import os
 import argparse
 import re
 import time
-from backup import metadata
-from backup import mylog
+from metadata import MetaData
+from mylog import MyLog
 
-DEFAULT_SOURCE = 'personal'
-DEFAULT_BUCKET = 'mcombs-backup'
 
 
 class CreateMetadata(object):
-    '''Create backup file metadata
+    '''Create metadata files for backup to S3.
 
-        Parameters:
-            debug      : Enable debug mode. Sets log level to 'debug'.
-            loglevel   : Set logging level [DEF: 'info']
+    ATTRIBUTES
+        debug      : Enable debug mode. Sets loglevel='DEBUG'.
+
+        loglevel   : Set logging level [DEF: 'INFO']
+
+        source     : Source tag.
+
+        bucket     : S3 bucket where file and metadata file are stored.
+
     '''
-    def __init__(self, debug=None, loglevel='info',
-                 source=DEFAULT_SOURCE, bucket=DEFAULT_BUCKET):
+
+
+    DEFAULT_SOURCE = 'personal'
+    DEFAULT_BUCKET = 'mcombs-backup'
+
+
+    def __init__(self, debug=None, loglevel='INFO',
+                 force=False, showprogress=False,
+                 source=None, bucket=None):
         self.exit_status = 0
         self.debug = debug
-        self.loglevel = loglevel.upper()
-        self.top_level = os.path.dirname(os.path.abspath(sys.argv[0]))
-        self.source = source
-        self.bucket = bucket
-        l = mylog.MyLog(program=__name__, debug=debug)
+        self.loglevel = loglevel
+        program=__class__.__name__
+        l = MyLog(program=program, debug=debug, loglevel=loglevel)
         self.log = l.log
+        self.force = force
+        self.showprogress = showprogress
+        self.top_level = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+        self.md_filelist = {}
+        self.set_source(source)
+        self.set_bucket(bucket)
         return
 
 
-def main():
+
+    def set_source(self, source=None):
+        '''Set source for metadate file
+        '''
+        if source: self.source = source
+        return
+
+
+
+    def set_bucket(self, bucket=None):
+        '''Set bucket for metadate file
+        '''
+        if bucket: self.bucket = bucket
+        return
+
+
+
+    def get_files(self):
+        '''Get the dictionary of metadata files and their contents.
+        '''
+        return self.md_filelist
+
+
+
+    def precheck(self, filelist=None):
+        '''Parse the list of files passed and returns a list of full paths to
+        those files which pass the tests.
+        '''
+        clean_list = []
+        for f in filelist:
+            fullpath = os.path.realpath(f)
+            (full_sans_ext, ext) = os.path.splitext(fullpath)
+            basename = os.path.basename(fullpath)
+            # Skip '.meta' files passed.
+            if ext == '.meta':
+                self.log.debug('Skipping "{}"'.format(fullpath))
+                continue
+
+            # Unless we --force re-creation, skip any files which already
+            # have a '.meta' file.
+            metafile = fullpath + '.meta'
+            if os.path.exists(metafile) and not self.force:
+                self.log.warning('Metadata file already exists "{}"'.format(
+                    metafile))
+                continue
+            clean_list.append(fullpath)
+        return clean_list
+
+
+
+    def build_files(self, filelist=None):
+        '''Takes a list of full paths and builds a set of metadata files for
+        each file passed.
+        '''
+        for f in filelist:
+            self.log.debug('Building metadata for "{}"'.format(os.path.basename(f)))
+            md = MetaData(debug=self.debug, loglevel=self.loglevel,
+                          showprogress=self.showprogress)
+            md_fullpath = f + '.meta'
+            f_basename = os.path.basename(f)
+            md.set_filename(f)
+            backup_time = time.strftime('%Y-%m-%d %H:%M:%S %z',
+                                        time.gmtime())
+            md.set_source(self.source)
+            md.set_backup_date(backup_time)
+            s3_url = 's3://{}/{}'.format(self.bucket, f_basename)
+            md.set_s3_url(s3_url)
+            s3_url_metadata = 's3://{}/{}'.format(self.bucket, md.md_filename)
+            md.set_s3_url_metadata(s3_url_metadata)
+            md.add_file_stats()
+            self.md_filelist[md_fullpath] = md.format()
+        return
+
+
+#----------------------------------------------------------------------------#
+# BEGIN main program
+def parse_arguments():
+    '''Parse arguments.
+    '''
     parser = argparse.ArgumentParser(
         description='Create file meta-data.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -47,75 +141,48 @@ def main():
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         help='Log level.')
     parser.add_argument('--force', action='store_true', default=False,
-        help='Overwrite existing stats files.')
-    parser.add_argument('--progress', action='store_true', default=False,
+        help='Overwrite existing metadata files.')
+    parser.add_argument('--showprogress', action='store_true', default=False,
         help='Enable progress bar.')
     parser.add_argument('--source', action='store', type=str,
-        default=DEFAULT_SOURCE,
+        default=CreateMetadata.DEFAULT_SOURCE,
         help='Set source.')
     parser.add_argument('--bucket', action='store', type=str,
-        default=DEFAULT_BUCKET,
+        default=CreateMetadata.DEFAULT_BUCKET,
         help='Set S3 bucket.')
     parser.add_argument('files', action='store', nargs='+', type=str,
         default=None,
         help='Files to process.')
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+
+def main():
+    args = parse_arguments()
     s = CreateMetadata(debug=args.debug,
                        loglevel=args.loglevel,
+                       force=args.force,
+                       showprogress=args.showprogress,
+                       source=args.source,
                        bucket=args.bucket)
-
-    # Start
-    files_to_stat = []
-    meta = metadata.MetaData(debug=args.debug,
-                             loglevel=args.loglevel,
-                             progress=args.progress)
-    for f in args.files:
-        fullpath = os.path.abspath(f)
-        (base, ext) = os.path.splitext(fullpath)
-        basename = os.path.basename(fullpath)
-        # If file passed is a meta-data file, skip it.
-        if ext == '.meta':
-            s.log.warning('Skipping meta-data file "{}"'.format(fullpath))
-            continue
-        metafile = base + '.meta'
-        if os.path.exists(metafile) and not args.force:
-            s.log.warning('Meta-data file already exists "{}" and --force not specified.  Skipping.'.format(metafile))
-            continue
-        meta.init_file_stats(filename=fullpath)
-        files_to_stat.append(fullpath)
-    for f in files_to_stat:
-        (base, ext) = os.path.splitext(f)
-        metafile = base + '.meta'
-        basename = os.path.basename(f)
-        f_mtime = time.strftime('%Y-%m-%d %H:%M:%S %z',
-                                time.gmtime(os.path.getmtime(f)))
-        #
-        # Check for a date in the name of the file.  If not found,
-        # use the mtime for the archive.
-        datefound = re.match(r'.*-(\d\d\d\d)-(\d\d)-(\d\d)\.*', basename)
-        if datefound:
-            (yr,mth,dy) = datefound.group(1,2,3)
-        else:
-            (yr,mth,dy) = re.match(r'^(\d\d\d\d)-(\d\d)-(\d\d) .*',
-                                   f_mtime).group(1,2,3)
-        metabasename = os.path.basename(metafile)
-        meta.set_source(filename=basename, backup_source=s.source)
-        meta.set_date(filename=basename, backup_date=f_mtime)
-        meta.set_s3_url(filename=basename,
-                        s3_url=('s3://' + s.bucket + '/' + basename))
-        meta.set_s3_url_metadata(filename=f,
-                                 s3_url_metadata=('s3://' + s.bucket
-                                                  + '/' + metabasename))
-        meta.add_file_stats(filename=f)
-        s.log.info('Writing meta-data file "{}"'.format(metafile))
-        fw = open(metafile, 'w')
-        fw.write(meta.format(f))
+    metadata_candidates = s.precheck(args.files)
+    s.build_files(metadata_candidates)
+    metadata_files = s.get_files()
+    for metafile in metadata_files.keys():
+        s.log.info('Writing "{}"'.format(metafile))
+        with open(metafile, 'w') as fw:
+            fw.write(metadata_files[metafile])
+            s.log.debug('Contents\n{}\n{}\n{}'.format(
+                '='*76,
+                metadata_files[metafile],
+                '='*76))
         fw.close()
+    return
 
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
 
 
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #=============================================================================#
-# Project Docs :
+# Project Docs : 
 # Ticket       :
-# Source Ctl   :
+# Source Ctl   : 
 #=============================================================================#
 
 set -euf -o pipefail
@@ -14,15 +14,20 @@ set -euf -o pipefail
 # Some versions of python "activate" fail if -u is set.
 
 TOP_DIR="$(dirname $(dirname $(realpath ${BASH_SOURCE[0]})))"
-
 if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     pushd ${TOP_DIR} 1>/dev/null 2>/dev/null
     python3 -m venv ve3
-    [[ -s requirements.txt ]] && ./ve3/bin/pip3 install -r requirements.txt
+    [[ -s requirements.txt ]] && OPTS="-r requirements.txt"
+    OPTS="${OPTS:=''}"
+    ./ve3/bin/pip3 install --upgrade pip ${OPTS}
+    unset OPTS
     popd 1>/dev/null 2>/dev/null
 fi
-set +u
-source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_config.py ${*}
+if [[ ${#} -lt 1 ]]; then
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_config.py
+else
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_config.py ${*}
+fi
 exit ${?}
 
 

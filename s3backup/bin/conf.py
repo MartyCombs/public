@@ -9,7 +9,7 @@ import sys
 import os
 import re
 import configparser
-from .mylog import MyLog
+from mylog import MyLog
 
 
 class Conf(object):
@@ -28,16 +28,25 @@ class Conf(object):
 
         encryption_key_filename : S3 URL for the metadata file.
 
+        metadata_destination    : Local destination for the metadata files.
+
+        manifest_destination    : Local destination for the manifest files
+                                  which list the contents of tar archives.
+                                  Archives are assumed to be compressed with
+                                  .tar.gz extension.
+
     '''
 
-    TOP_DIR = str(os.sep).join(os.path.realpath(__file__).split(os.sep)[:-3])
+    TOP_DIR = str(os.sep).join(os.path.realpath(__file__).split(os.sep)[:-2])
     DEF_CONFIG_FILE = TOP_DIR + os.sep + 'etc' + os.sep + 's3backup.cfg'
-    CONFIG_INIT = {
+    DEF_CONFIG = {
         'backup_source'            : 'personal',
         'file_checksum_method'     : 'sha512',
-        's3_url'                   : 's3://bucket-name/path',
-        's3_url_metadata'          : 's3://bucket-name/path'
-        'encryption_key_filename'  : 'etc/encryption_key'
+        's3_url'                   : 's3://BUCKET_NAME/PATH',
+        's3_url_metadata'          : 's3://BUCKET_NAME/PATH',
+        'encryption_key_filename'  : 'etc/encryption_key',
+        'metadata_destination'     : 'meta/BUCKET_NAME/PATH',
+        'manifest_destination'     : 'manifest/BUCKET_NAME/PATH'
     }
     CONFIG_HEADER = '''#
 #
@@ -48,17 +57,26 @@ class Conf(object):
 #                              of the backup file.
 #
 # s3_url                       S3 URL for storing the backup file.
-#                              [FORMAT: 's3://bucket/path/'
+#                              [FORMAT: 's3://BUCKET_NAME/PATH'
 #
 # s3_url_metadata              S3 URL for storing the metadata file.  This
 #                              could be in a separate location.
-#                              [FORMAT: 's3://bucket/path/'
+#                              [FORMAT: 's3://BUCKET_NAME/PATH'
 #
 # encryption_key_filename      File name containing the AES-256 encryption
 #                              key for encrypting backups.
 #                              PROTECT this file with minimal read permissions
 #                              (chmod 400 FILENAME).
-#                              [DEFAULT: ./etc/encryption_key
+#                              [DEFAULT: etc/encryption_key
+#
+# metadata_destination         Local destination for the metadata files.
+#                              [DEFAULT: meta/BUCKET_NAME/PATH]
+#
+# manifest_destination         Local destination for the manifest files
+#                              which list the contents of tar archives.
+#                              Archives are assumed to be compressed with
+#                              .tar.gz extension.
+#                              [DEFAULT: manifest/BUCKET_NAME/PATH]
 #
     '''
 
@@ -74,33 +92,13 @@ class Conf(object):
         self.filename = self.DEF_CONFIG_FILE
 
         # Config parameters
-        self.backup_source = self.CONFIG_INIT['backup_source']
-        self.file_checksum_method = self.CONFIG_INIT['file_checksum_method']
-        self.s3_url = self.CONFIG_INIT['s3_url']
-        self.s3_url_metadata = self.CONFIG_INIT['s3_url_metadata']
-        self.encryption_key_filename = self.CONFIG_INIT['encryption_key_filename']
-        return
-
-
-
-    def set_backup_source(self, backup_source):
-        self.backup_source = backup_source
-        return
-
-    def set_file_checksum_method(self, file_checksum_method):
-        self.file_checksum_method = file_checksum_method
-        return
-
-    def set_s3_url(self, s3_url):
-        self.s3_url = s3_url
-        return
-
-    def set_s3_url_metadata(self, s3_url_metadata):
-        self.s3_url_metadata = s3_url_metadata
-        return
-
-    def set_encryption_key_filename(self, encryption_key_filename):
-        self.encryption_key_filename = encryption_key_filename
+        self.backup_source = self.DEF_CONFIG['backup_source']
+        self.file_checksum_method = self.DEF_CONFIG['file_checksum_method']
+        self.s3_url = self.DEF_CONFIG['s3_url']
+        self.s3_url_metadata = self.DEF_CONFIG['s3_url_metadata']
+        self.encryption_key_filename = self.DEF_CONFIG['encryption_key_filename']
+        self.metadata_destination = self.DEF_CONFIG['metadata_destination']
+        self.manifest_destination = self.DEF_CONFIG['manifest_destination']
         return
 
 
@@ -121,6 +119,10 @@ class Conf(object):
             'DEFAULT', 's3_url_metadata')
         self.encryption_key_filename = cfg.get(
             'DEFAULT', 'encryption_key_filename')
+        self.metadata_destination = cfg.get(
+            'DEFAULT', 'metadata_destination')
+        self.manifest_destination = cfg.get(
+            'DEFAULT', 'manifest_destination')
         return
 
 
@@ -134,12 +136,16 @@ class Conf(object):
         report += '{:<25} {}\n'.format('s3_url_metadata', self.s3_url_metadata)
         report += '{:<25} {}\n'.format('encryption_key_filename',
                                        self.encryption_key_filename)
+        report += '{:<25} {}\n'.format('metadata_destination',
+                                       self.metadata_destination)
+        report += '{:<25} {}\n'.format('manifest_destination',
+                                       self.manifest_destination)
         report += '{}\n'.format('='*76)
         return report
 
 
 
-    def create_config(self):
+    def create(self):
         '''Create the config file with all default values.
         '''
         div = '#{}#'.format('='*76)
@@ -149,8 +155,8 @@ class Conf(object):
         cfg += '{}'.format(self.CONFIG_HEADER)
         cfg += '\n'
         cfg += '[DEFAULT]\n'
-        for key in self.CONFIG_INIT.keys():
-            cfg += '{} = {}\n'.format(key, self.CONFIG_INIT[key])
+        for key in self.DEF_CONFIG.keys():
+            cfg += '{} = {}\n'.format(key, self.DEF_CONFIG[key])
         cfg += '\n\n\n'
         cfg += '{}\n# END\n{}\n'.format(div, div)
         return cfg

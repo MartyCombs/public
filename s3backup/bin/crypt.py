@@ -11,7 +11,7 @@ import hashlib
 import random
 import struct
 from Crypto.Cipher import AES
-from .mylog import MyLog
+from mylog import MyLog
 
 
 
@@ -23,8 +23,8 @@ class Crypt(object):
         log_level      : Log level.
 
     METHODS
-        encrypt_file   : Encrypt a file. Extension '.enc' is appended.
-        decrypt_file   : Decrypt a file. Extension '.enc' is assumed.
+        encrypt        : Encrypt a file. Extension '.enc' is appended.
+        decrypt        : Decrypt a file. Extension '.enc' is assumed.
     '''
 
 
@@ -71,15 +71,13 @@ class Crypt(object):
 
 
     def _check_key(self, identifier=None):
-        if not self.key_identifier:    self._read_key()
+        if not self.key_identifier: self._read_key()
         if identifier == self.key_identifier: return True
         return False
 
 
 
-    def encrypt_file(self, in_filename=None,
-                           out_filename=None,
-                           chunksize=64*1024):
+    def encrypt(self, in_filename=None, out_filename=None, chunksize=64*1024):
         ''' Encrypts a file using AES (CBC mode) with the given key.
 
             in_filename:
@@ -96,49 +94,49 @@ class Crypt(object):
         '''
         if not out_filename:
             out_filename = in_filename + '.enc'
-        self.log.info('Encrypting {} --> {}'.format(in_filename, out_filename))
-        encryptor                          = AES.new(self._read_key(), AES.MODE_CBC)
-        filesize                           = os.path.getsize(in_filename)
+        self.log.info('Encrypting "{}" --> "{}"'.format(in_filename, out_filename))
+        encryptor = AES.new(self._read_key(), AES.MODE_CBC)
+        filesize = os.path.getsize(in_filename)
         with open(in_filename, 'rb') as infile:
             with open(out_filename, 'wb') as outfile:
                 outfile.write(struct.pack('<Q', filesize))
                 outfile.write(struct.pack('<4s', self.key_identifier.encode('utf-8')))
                 outfile.write(encryptor.iv)
                 while True:
-                    chunk                  = infile.read(chunksize)
+                    chunk = infile.read(chunksize)
                     if len(chunk) == 0:
                         break
                     elif len(chunk) % 16 != 0:
-                        chunk              += b' ' * (16 - len(chunk) % 16)
+                        chunk += b' ' * (16 - len(chunk) % 16)
                     outfile.write(encryptor.encrypt(chunk))
         self.log.info('Encryption complete : {}'.format(out_filename))
         return
 
 
 
-    def decrypt_file(self, in_filename, out_filename=None, chunksize=24*1024):
+    def decrypt(self, in_filename, out_filename=None, chunksize=24*1024):
         ''' Decrypts a file using AES (CBC mode) with the given key.
         Parameters are similar to encrypt_file, with one difference:
         out_filename, if not supplied will be in_filename without its last extension
         (i.e. if in_filename is 'aaa.zip.enc' then out_filename will be 'aaa.zip')
         '''
         if not out_filename:
-            out_filename                   = os.path.splitext(in_filename)[0]
-        self.log.info('Decrypting {} --> {}'.format(in_filename, out_filename))
+            out_filename = os.path.splitext(in_filename)[0]
+        self.log.info('Decrypting "{}" --> "{}"'.format(in_filename, out_filename))
         with open(in_filename, 'rb') as infile:
-            origsize                       = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]
-            key_identifier                 = struct.unpack('<4s', infile.read(4))[0].decode('utf-8')
-            iv                             = infile.read(16)
-            decryptor                      = AES.new(self._read_key(), AES.MODE_CBC, iv)
+            origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]
+            key_identifier = struct.unpack('<4s', infile.read(4))[0].decode('utf-8')
+            iv = infile.read(16)
+            decryptor = AES.new(self._read_key(), AES.MODE_CBC, iv)
             if self._check_key(key_identifier) == False: raise Exception('Key identifier used to encrypt "{}" does not match current key "{}".'.format(key_identifier, self.key_identifier))
             with open(out_filename, 'wb') as outfile:
                 while True:
-                    chunk                  = infile.read(chunksize)
+                    chunk = infile.read(chunksize)
                     if len(chunk) == 0:
                         break
                     outfile.write(decryptor.decrypt(chunk))
                 outfile.truncate(origsize)
-        self.log.info('Decryption complete : {}'.format(out_filename))
+        self.log.info('Decryption complete "{}"'.format(out_filename))
         return
 
 

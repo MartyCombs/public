@@ -8,8 +8,8 @@
 import sys
 import os
 import argparse
-from backup import mylog
-from backup import conf
+from mylog import MyLog
+from conf import Conf
 
 def parse_arguments():
     '''Parse arguments.
@@ -30,20 +30,18 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    l = mylog.MyLog(debug=args.debug, loglevel=args.loglevel)
+    l = MyLog(debug=args.debug, loglevel=args.loglevel)
     log = l.log
-    myconf = conf.Conf(debug=args.debug, loglevel=args.loglevel)
-    conf_file = myconf.create_config()
+    myconf = Conf(debug=args.debug, loglevel=args.loglevel)
+    conf_file = myconf.create()
     if os.path.isfile(myconf.filename) and not args.force:
         raise Exception('''
-            Config already exists!
-            "{}"
-            Use --force to override.
-        '''.format(myconf.filename))
+            Config exists.  "{}"
+            Use --force to override.'''.format(myconf.filename))
     with open(myconf.filename, 'w') as c:
         c.write(conf_file)
     log.info('Created config "{}"'.format(myconf.filename))
-    return
+    return True
 
 
 
