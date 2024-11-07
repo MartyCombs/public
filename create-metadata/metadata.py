@@ -19,13 +19,13 @@ class MetaData(object):
     '''Manages the metadata structure of files backed up to S3.
 
     ATTRIBUTES
-        debug             : Enable debug mode. (T/F)
+        debug             : Enable debug mode.
         loglevel          : Log level.
-        showprogress      : Enable progress bar. (T/F)
+        showprogress      : Enable progress bar.
         filename          : Basename of the file.
         fullpath          : Full path to the file.
         md_filename       : Basename of the metadata file.
-        md_filecontents     : JSON formatted contents of the metadata file.
+        md_filecontents   : JSON formatted contents of the metadata file.
         stats             : Data structure for metadata file. (See below.)
 
     DATA STRUCTURE
@@ -53,13 +53,13 @@ class MetaData(object):
     '''
 
     MDINIT = {
-        'backup_source' : 'personal',   # Backup source
-        'backup_date' : None,           # 'Y-M-D H:M:S TZ'.
-        'file_size_bytes' : None,       # File size in bytes.
-        'file_checksum' : None,         # Checksum of backup file.
+        'backup_source' : 'personal',   # Backup source note
+        'backup_date' : None,           # 'Y-M-D H:M:S TZ'
+        'file_size_bytes' : None,       # File size in bytes
+        'file_checksum' : None,         # Checksum of backup file
         'file_checksum_method' : None,  # Checksum method (SHA256, MD5, etc)
-        's3_url' : None,                # S3 URL of file.
-        's3_url_metadata' : None        # S3 URL of metadata file.
+        's3_url' : None,                # S3 URL of file
+        's3_url_metadata' : None        # S3 URL of metadata file
     }
 
 
@@ -82,11 +82,10 @@ class MetaData(object):
 
 
     def set_filename(self, path=None):
-        '''Set filename attribute and associated attributes -
-        fullpath, md_filename
+        '''Given a path, set attributes filename, fullpath, md_filename.
         '''
         if not os.path.exists(path): raise Exception('File does not exist')
-        if not os.path.isfile(path): raise Exception('No a file.')
+        if not os.path.isfile(path): raise Exception('Not a file')
         if not os.access(path, os.R_OK): raise Exception('File not readable')
         self.filename = os.path.basename(path)
         self.fullpath = os.path.realpath(self.filename)

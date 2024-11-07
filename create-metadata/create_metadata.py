@@ -52,6 +52,8 @@ class CreateMetadata(object):
         self.bucket = self.set_bucket(bucket)
         return
 
+
+
     def set_source(self, source=None):
         '''Set source for metadate file
         '''
@@ -61,6 +63,8 @@ class CreateMetadata(object):
             self.source = CreateMetadata.DEFAULT_SOURCE
         return
 
+
+
     def set_bucket(self, bucket=None):
         '''Set bucket for metadate file
         '''
@@ -69,6 +73,8 @@ class CreateMetadata(object):
         else:
             self.bucket = CreateMetadata.DEFAULT_BUCKET
         return
+
+
 
     def get_files(self):
         '''Get the dictionary of metadata files and their contents.
