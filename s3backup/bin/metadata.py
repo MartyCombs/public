@@ -35,15 +35,17 @@ class MetaData(object):
             'file_size_bytes'      : File size in bytes.
             'file_checksum'        : Checksum of backup file.
             'file_checksum_method' : Checksum method (SHA256, MD5, etc)
+            'encryption_key'       : Encryption key used on the file.
             's3_url'               : S3 URL to file.
             's3_url_metadata'      : S3 URL to metadata file.
         }
 
     METHODS
         set_filename               : Set the file name.
-        set_source                 : Set backup source.
+        set_backup_source          : Set backup source.
         set_backup_date            : Set date for backup.
         add_file_stats             : Add file size and checksum.
+        set_encryption_key         : Set the value for encryption key used.
         set_s3_url                 : Set S3 URL for backup file.
         set_s3_url_metadata        : Set S3 URL for metadata file.
         format                     : Return JSON formatted contents of
@@ -58,6 +60,7 @@ class MetaData(object):
         'file_size_bytes' : None,       # File size in bytes
         'file_checksum' : None,         # Checksum of backup file
         'file_checksum_method' : None,  # Checksum method (SHA256, MD5, etc)
+        'encryption_key' : 'GPG key',   # Encryption key used on the file.
         's3_url' : None,                # S3 URL of file
         's3_url_metadata' : None        # S3 URL of metadata file
     }
@@ -94,7 +97,7 @@ class MetaData(object):
 
 
 
-    def set_source(self, backup_source=None):
+    def set_backup_source(self, backup_source=None):
         '''Set the backup source for the filename.
         '''
         self.log.debug('Setting "backup_source" to "{}"'.format(backup_source))
@@ -156,6 +159,15 @@ class MetaData(object):
                 if self.showprogress == True: bar.update(i)
         if self.showprogress == True: bar.finish()
         self.stats['file_checksum'] = '{}'.format(hasher.hexdigest())
+        return
+
+
+
+    def set_encryption_key(self, key_used=None):
+        '''Set the value of the encryption key used on the file.
+        '''
+        self.log.debug('Setting "encryption_key" to "{}"'.format(key_used))
+        self.stats['encryption_key'] = key_used
         return
 
 

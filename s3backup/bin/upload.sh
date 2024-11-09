@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #=============================================================================#
-# Project Docs : 
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
 # Ticket       :
-# Source Ctl   : 
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/create_metadata.sh
 #=============================================================================#
 
 set -euf -o pipefail
@@ -24,9 +24,10 @@ if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     popd 1>/dev/null 2>/dev/null
 fi
 if [[ ${#} -lt 1 ]]; then
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_config.py
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py --help
+    exit 1
 else
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_config.py ${*}
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py ${*}
 fi
 exit ${?}
 

@@ -13,7 +13,7 @@ set -euf -o pipefail
 #
 # Some versions of python "activate" fail if -u is set.
 
-TOP_DIR="$(dirname $(realpath ${BASH_SOURCE[0]}))"
+TOP_DIR="$(dirname $(dirname $(realpath ${BASH_SOURCE[0]})))"
 if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     pushd ${TOP_DIR} 1>/dev/null 2>/dev/null
     python3 -m venv ve3
@@ -24,10 +24,10 @@ if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     popd 1>/dev/null 2>/dev/null
 fi
 if [[ ${#} -lt 1 ]]; then
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/create_metadata.py --help
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py --help
     exit 1
 else
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/create_metadata.py ${*}
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py ${*}
 fi
 exit ${?}
 

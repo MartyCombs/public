@@ -2,7 +2,7 @@
 #=============================================================================#
 # Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
 # Ticket       :
-# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/test.sh
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/create_metadata.sh
 #=============================================================================#
 
 set -euf -o pipefail
@@ -13,15 +13,23 @@ set -euf -o pipefail
 #
 # Some versions of python "activate" fail if -u is set.
 
-TOP_DIR="$(dirname $(realpath ${BASH_SOURCE[0]}))"
+TOP_DIR="$(dirname $(dirname $(realpath ${BASH_SOURCE[0]})))"
 if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     pushd ${TOP_DIR} 1>/dev/null 2>/dev/null
     python3 -m venv ve3
-    [[ -s requirements.txt ]] && ./ve3/bin/pip3 install -r requirements.txt
+    [[ -s requirements.txt ]] && OPTS="-r requirements.txt"
+    OPTS="${OPTS:=''}"
+    ./ve3/bin/pip3 install --upgrade pip ${OPTS}
+    unset OPTS
     popd 1>/dev/null 2>/dev/null
 fi
-set +u
-source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/test.py ${*}
+if [[ ${#} -lt 1 ]]; then
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py --help
+    exit 1
+else
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py ${*}
+fi
+exit ${?}
 
 
 

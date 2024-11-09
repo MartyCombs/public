@@ -9,12 +9,12 @@ import sys
 import os
 import argparse
 from mylog import MyLog
-from conf import Conf
+from metadata_conf import MetadataConf
 
 def parse_arguments():
     '''Parse arguments.
     '''
-    parser = argparse.ArgumentParser(description='Create a configuration file for S3 backups.')
+    parser = argparse.ArgumentParser(description='Create a configuration file for metadata file settings.')
     parser.add_argument('--debug', action='store_true',
         default=False,
         help='Verbose output.')
@@ -24,6 +24,9 @@ def parse_arguments():
     parser.add_argument('--force', action='store_true',
         default=False,
         help='Force creation of confiuration file even if it already exists.')
+    parser.add_argument('--stdout', action='store_true',
+        default=False,
+        help='Echo contents of config to STDOUT.')
     return parser.parse_args()
 
 
@@ -32,8 +35,11 @@ def main():
     args = parse_arguments()
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
     log = l.log
-    myconf = Conf(debug=args.debug, loglevel=args.loglevel)
+    myconf = MetadataConf(debug=args.debug, loglevel=args.loglevel)
     conf_file = myconf.create()
+    if args.stdout == True:
+        print(conf_file)
+        return
     if os.path.isfile(myconf.filename) and not args.force:
         raise Exception('''
             Config exists.  "{}"
@@ -41,7 +47,7 @@ def main():
     with open(myconf.filename, 'w') as c:
         c.write(conf_file)
     log.info('Created config "{}"'.format(myconf.filename))
-    return True
+    return
 
 
 
