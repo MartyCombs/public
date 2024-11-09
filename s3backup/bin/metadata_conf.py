@@ -147,8 +147,10 @@ class MetadataConf(object):
     def _conf_header(self):
         header = ''
         header += '''#
+# Created by
+#    {}
 # Configuration file for metadata file settings.
-#       '''
+#       '''.format(__class__)
         header += '''
 # backup_source                Label for the backup source such as
 #                              'personal', 'work', 'photos', etc.
