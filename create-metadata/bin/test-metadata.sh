@@ -2,7 +2,7 @@
 #=============================================================================#
 # Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
 # Ticket       :
-# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/test.sh
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/test-metadata.sh
 #=============================================================================#
 
 set -euf -o pipefail
@@ -31,11 +31,18 @@ This is a test file.
 EOF
 
 echo >&2 "Testing MetaData class."
-source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/test.py
+source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/test-metadata.py
 
-OPTIONS='--backup_source=personal --encryption_key=...abcd --s3_url=s3://mybucket/path --s3_url_metadata=s3://anotherbucket/differentpath'
-echo >&2 "Testing 'create_metadata.sh"
-${TOP_DIR}/bin/create_metadata.sh ${OPTIONS} ${TOP_DIR}/bin/testfile
+echo >&2 "Testing 'create_metadata.sh'"
+${TOP_DIR}/bin/create_metadata.sh --backup_source="personal" \
+    --encryption_key="a different key" \
+    --s3_url="s3://mybucket/path" \
+    --s3_url_metadata="s3://anotherbucket/differentpath" \
+    ${TOP_DIR}/bin/testfile
+echo >&2 "Contents of testfile.meta"
+echo >&2 "============================================================================"
+cat ${TOP_DIR}/bin/testfile.meta
+echo >&2 "============================================================================"
 command rm -v ${TOP_DIR}/bin/testfile.meta ${TOP_DIR}/bin/testfile
 exit ${?}
 

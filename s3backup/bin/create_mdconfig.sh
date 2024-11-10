@@ -26,7 +26,7 @@ fi
 if [[ ${#} -lt 1 ]]; then
     source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_mdconfig.py
 else
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_mdconfig.py ${*}
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_mdconfig.py "$@"
 fi
 exit ${?}
 

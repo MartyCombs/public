@@ -27,7 +27,7 @@ if [[ ${#} -lt 1 ]]; then
     source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py --help
     exit 1
 else
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py ${*}
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_metadata.py "$@"
 fi
 exit ${?}
 
