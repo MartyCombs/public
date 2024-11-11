@@ -70,23 +70,37 @@ class S3BackupConf(object):
         self.log.debug('Reading {}'.format(self.DEF_CONFIG_FILE))
         cfg = configparser.RawConfigParser()
         cfg.read(self.DEF_CONFIG_FILE)
-        self.encryption_key_filename = cfg.get(
-            'DEFAULT', 'encryption_key_filename')
-        self.metadata_destination = cfg.get(
-            'DEFAULT', 'metadata_destination')
-        self.manifest_destination = cfg.get(
-            'DEFAULT', 'manifest_destination')
-        self.manifest_destination = cfg.get(
-            'DEFAULT', 'drop_dir')
-        self.manifest_destination = cfg.get(
-            'DEFAULT', 'manifest_dir')
-        self.manifest_destination = cfg.get(
-            'DEFAULT', 'encrypt_dir')
-        self.manifest_destination = cfg.get(
-            'DEFAULT', 'metadata_dir')
-        self.manifest_destination = cfg.get(
-            'DEFAULT', 's3upload_dir')
+        self.encryption_key_filename = self._add_path(cfg.get(
+            'DEFAULT', 'encryption_key_filename'))
+        self.metadata_destination = self._add_path(cfg.get(
+            'DEFAULT', 'metadata_destination'))
+        self.manifest_destination = self._add_path(cfg.get(
+            'DEFAULT', 'manifest_destination'))
+        self.drop_dir = self._add_path(cfg.get(
+            'DEFAULT', 'drop_dir'))
+        self.manifest_dir = self._add_path(cfg.get(
+            'DEFAULT', 'manifest_dir'))
+        self.encrypt_dir = self._add_path(cfg.get(
+            'DEFAULT', 'encrypt_dir'))
+        self.metadata_dir = self._add_path(cfg.get(
+            'DEFAULT', 'metadata_dir'))
+        self.s3upload_dir = self._add_path(cfg.get(
+            'DEFAULT', 's3upload_dir'))
         return
+
+
+
+    def _add_path(self, path=None):
+        '''If first character of a path is os.sep, assume the full path is
+        specified.  Otherwise ASSUME that the path specified is relative
+        to the top level directory.
+        '''
+        fullpath = None
+        if path[0] == os.sep:
+            fullpath = path
+        else:
+            fullpath = self.TOP_DIR + os.sep + path
+        return fullpath
 
 
 
