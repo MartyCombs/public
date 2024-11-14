@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #=============================================================================#
-# Project Docs :
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create_metadata/README.md
 # Ticket       :
-# Source Ctl   :
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/bin/create_mdconfig.py
 #=============================================================================#
 
 import sys

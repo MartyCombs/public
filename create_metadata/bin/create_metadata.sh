@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #=============================================================================#
-# Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create_metadata/README.md
 # Ticket       :
-# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/create_metadata.sh
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/bin/create_metadata.sh
 #=============================================================================#
 
 set -euf -o pipefail
