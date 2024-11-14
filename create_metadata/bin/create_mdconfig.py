@@ -23,7 +23,7 @@ def parse_arguments():
         help='Log level.')
     parser.add_argument('--force', action='store_true',
         default=False,
-        help='Force creation of confiuration file even if it already exists.')
+        help='Force creation of configuration file even if it already exists.')
     parser.add_argument('--stdout', action='store_true',
         default=False,
         help='Echo contents of config to STDOUT.')

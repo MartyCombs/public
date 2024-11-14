@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#=============================================================================#
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create_metadata/README.md
+# Ticket       :
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/test/test_metadata.py
+#=============================================================================#
 
 import sys
 import os
@@ -35,3 +40,9 @@ if filecontents == filecontents2:
 else:
     log.info('MetaData class PASSED')
 sys.exit()
+
+
+
+#=============================================================================#
+# END
+#=============================================================================#

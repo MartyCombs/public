@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #=============================================================================#
-# Project Docs : https://github.com/MartyCombs/public/blob/main/create-metadata/README.md
+# Project Docs : https://github.com/MartyCombs/public/blob/main/create_metadata/README.md
 # Ticket       :
-# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create-metadata/test-metadata.sh
+# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/test/test_metadata.sh
 #=============================================================================#
 
 set -euf -o pipefail
@@ -23,27 +23,37 @@ if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     unset OPTS
     popd 1>/dev/null 2>/dev/null
 fi
+
+# Prepare path to import python modules from bin
+if [[ -z ${PYTHONPATH+x} ]]; then
+    export PYTHONPATH="${TOP_DIR}/bin"
+else
+    export PYTHONPATH="${PYTHONPATH}:${TOP_DIR}/bin"
+fi
+
+
 echo >&2 "Testing 'create_mdconfig.sh --stdout'"
 ${TOP_DIR}/bin/create_mdconfig.sh --stdout
 
-cat >${TOP_DIR}/bin/testfile <<EOF
+TEST_DIR="${TOP_DIR}/test"
+cat >${TEST_DIR}/testfile <<EOF
 This is a test file.
 EOF
 
 echo >&2 "Testing MetaData class."
-source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/test-metadata.py
+source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test-metadata.py
 
 echo >&2 "Testing 'create_metadata.sh'"
 ${TOP_DIR}/bin/create_metadata.sh --backup_source="personal" \
     --encryption_key="a different key" \
     --s3_url="s3://mybucket/path" \
     --s3_url_metadata="s3://anotherbucket/differentpath" \
-    ${TOP_DIR}/bin/testfile
+    ${TEST_DIR}/testfile
 echo >&2 "Contents of testfile.meta"
 echo >&2 "============================================================================"
-cat ${TOP_DIR}/bin/testfile.meta
+cat ${TEST_DIR}/testfile.meta
 echo >&2 "============================================================================"
-command rm -v ${TOP_DIR}/bin/testfile.meta ${TOP_DIR}/bin/testfile
+command rm -v ${TEST_DIR}/testfile.meta ${TEST_DIR}/testfile
 exit ${?}
 
 
