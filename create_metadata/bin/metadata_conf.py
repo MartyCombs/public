@@ -63,27 +63,26 @@ class MetadataConf(object):
         self.log.debug('Reading {}'.format(self.DEF_CONFIG_FILE))
         cfg = configparser.RawConfigParser()
         cfg.read(self.DEF_CONFIG_FILE)
-        backup_source = cfg.get('DEFAULT', 'backup_source')
-        self.backup_source = self.set_backup_source(backup_source)
-        encryption_key = cfg.get('DEFAULT', 'encryption_key')
-        self.encryption_key = self.set_encryption_key(encryption_key)
-        s3_url = cfg.get('DEFAULT', 's3_url')
-        self.s3_url = self.set_s3_url(s3_url)
-        s3_url_metadata = cfg.get('DEFAULT', 's3_url_metadata')
-        self.set_s3_url_metadata(s3_url_metadata)
+        self.set_backup_source(
+            cfg.get('DEFAULT', 'backup_source'))
+        self.set_encryption_key(
+            cfg.get('DEFAULT', 'encryption_key'))
+        self.set_s3_url(
+            cfg.get('DEFAULT', 's3_url'))
+        set_s3_url_metadata(
+            cfg.get('DEFAULT', 's3_url_metadata'))
         return
 
 
 
     def set_backup_source(self, source=None):
-        '''
-        '''
         if source == None: return
         if source not in self.BACKUP_SOURCES:
             raise Exception('Backup source "{}" not in accepted list\n"{}"'.format(
                 source, self.BACKUP_SOURCES))
         self.backup_source = source
         return
+
 
 
     def set_encryption_key(self, enckey=None):
