@@ -9,13 +9,10 @@ import sys
 import os
 import datetime
 import argparse
+import json
 from mylog import MyLog
 from metadata import MetaData
 from aws_s3 import AWSS3
-
-
-# Set a multipart upload threshold of 64MB
-MP_THRESHOLD = 32 * (1024 ** 2)
 
 
 def parse_arguments():
@@ -65,48 +62,49 @@ def build_list(args=None, filelist=None):
         md.load(md_fullpath)
         src_dst = md.get_s3_url()
         md_dst = md.get_s3_url_metadata()
+        _check_metadata_file(mdref=md, file=md_file)
 
         # The source file should be in the same directory as the metadata file.
         src_fullpath = md_dir + os.sep + src_dst.split('/')[-1]
         if not os.path.isfile(src_fullpath):
             raise Exception('Could not find file {}'.format(src_fullpath))
 
-        # Create the list
-        (bucket,key) = get_bucket_and_key(src_dst)
+        # Create the list.  Each file will have two entries as both the file
+        # and its corresponding metadata file '.meta' are uploaded.
+        (bucket,key) = _get_bucket_and_key(src_dst)
         upload_list[src_fullpath] = {
             'dst_url'          : src_dst,
             'bucket'           : bucket,
             'key'              : key,
-            'mp_upload'        : needs_multipart_upload(src_fullpath)
         }
-        (bucket,key) = get_bucket_and_key(md_dst)
+        (bucket,key) = _get_bucket_and_key(md_dst)
         upload_list[md_fullpath] = {
             'dst_url'          : md_dst,
             'bucket'           : bucket,
             'key'              : key,
-            'mp_upload'        : needs_multipart_upload(md_fullpath)
         }
     return upload_list
 
 
 
-def get_bucket_and_key(url=None):
+def _check_metadata_file(mdref=None, file=None):
+    if mdref.get_s3_url() == None or mdref.get_s3_url_metadata() == None:
+        fileformat = json.dumps(mdref.MDINIT, indent=4)
+        raise Exception('Metadata format for "{}" not understood.\n\n{}'.format(
+            file, fileformat))
+    return
+
+
+
+def _get_bucket_and_key(url=None):
     '''Return S3 bucket and key from a URL.
 
-        s3://bucket/key/is/full/path
+        s3://BUCKET/KEY
 
     '''
     bucket = url.split('/')[2]
     key = '/'.join(url.split('/')[3:])
     return (bucket, key)
-
-
-
-def needs_multipart_upload(path=None):
-    '''Determine whether a file needs to use and S3 multipart upload.
-    '''
-    if os.path.getsize(path) > MP_THRESHOLD: return True
-    return False
 
 
 
