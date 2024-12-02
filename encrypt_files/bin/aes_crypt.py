@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import os
 import re
+import progressbar
 from base64 import b64encode
 from enc_conf import EncConf
 from mylog import MyLog
@@ -20,19 +21,20 @@ from mylog import MyLog
 class AESCrypt(object):
     '''Methods for encrypting and decrypting files.
     '''
-    def __init__(self, debug=False, loglevel='WARNING'):
+    def __init__(self, debug=False, loglevel='WARNING', showprogress=False):
         self.debug = debug
         self.loglevel = loglevel
         program=__class__.__name__
         l = MyLog(program=program, debug=debug, loglevel=loglevel)
         self.log = l.log
+        self.showprogress = showprogress
 
         self.filename = None
         self.re_encrypted = re.compile(r'^(.*)\.enc$')
         self.encrypted = None
         self.salt_size = 16
-        self.stats = { 'salt' : None, 'nonce' : None, 'key' : None,
-                       'tag' : None, 'filesize' : 0 }
+        self.stats = { 'salt' : None, 'nonce' : None, 'key' : None, 'tag' : None,
+                       'infile_size' : 0, 'outfile_size' : 0 }
         cfg = EncConf(debug=self.debug, loglevel=self.loglevel)
         cfg.read()
         self.keyfile = cfg.keyfile
@@ -77,6 +79,31 @@ class AESCrypt(object):
 
 
 
+    def _setup_progressbar(self):
+        progressmax = self.stats['infile_size'] / self.chunk_size
+        if self.stats['infile_size'] % self.chunk_size > 0:
+            progressmax += 1
+        if self.showprogress == True:
+            widgets = [progressbar.ETA(), ' ',
+                       progressbar.Bar('=', '[', ']', ' '), ' ',
+                       progressbar.Percentage()]
+            bar = progressbar.ProgressBar(widgets=widgets,
+                                          maxval=progressmax,
+                                          term_width=80).start()
+        return bar
+
+
+
+    def _print_stats(self):
+        rpt = '\n'
+        rpt += '{}\n'.format('='*76)
+        for k in self.stats.keys():
+            rpt += '{:<15} {}\n'.format(k, self.stats[k])
+        rpt += '{}\n'.format('='*76)
+        return rpt
+
+
+
     def encrypt(self):
         '''Encrypt the file set by set_filename() method.  The encrypted file
         will have '.enc' appended to the name.
@@ -85,6 +112,8 @@ class AESCrypt(object):
             raise Exception('Set filename with set_filename() method first')
         input_file = self.filename
         output_file = self.filename + '.enc'
+        self.log.debug('Encrypting "{}"'.format(os.path.basename(input_file)))
+
         # Generate a random salt and nonce
         salt = os.urandom(self.salt_size)
         nonce = os.urandom(self.nonce_size)
@@ -105,6 +134,10 @@ class AESCrypt(object):
             backend=default_backend()
         ).encryptor()
 
+        # Set up the progress bar.
+        self.stats['infile_size'] = os.path.getsize(input_file)
+        if self.showprogress == True: bar = self._setup_progressbar()
+
         # Set aside the first 16 bytes for the encryption tag and then
         # write salt and nonce to the beginning of the output file
         with open(output_file, 'wb') as out_file:
@@ -114,9 +147,13 @@ class AESCrypt(object):
 
             # Encrypt the file in chunks
             with open(input_file, 'rb') as in_file:
+                i = 0
                 while chunk := in_file.read(self.chunk_size):
                     encrypted_chunk = encryptor.update(chunk)
                     out_file.write(encrypted_chunk)
+                    i = i + 1
+                    if self.showprogress == True: bar.update(i)
+
 
             # Finalize encryption and write the authentication tag to the
             # beginning of the file.
@@ -125,9 +162,10 @@ class AESCrypt(object):
             out_file.seek(0)
             out_file.write(encryptor.tag)
             in_file.close()
+        if self.showprogress == True: bar.finish()
         out_file.close()
-        self.stats['filesize'] = os.path.getsize(output_file)
-        self.log.info('Encrypted "{}"->"{}"'.format(self.filename, output_file))
+        self.stats['outfile_size'] = os.path.getsize(output_file)
+        if self.debug: self.log.debug('{}'.format(self._print_stats()))
         return
 
 
@@ -143,15 +181,25 @@ class AESCrypt(object):
         if not is_encrypted:
             raise Exception('Unrecognized extension.')
         output_file = is_encrypted.group(1)
+        self.log.debug('Decrypting "{}"'.format(os.path.basename(input_file)))
+
+        self.stats['infile_size'] = os.path.getsize(input_file)
+        if self.showprogress == True: bar = self._setup_progressbar()
+        i = 0
+
         with open(input_file, 'rb') as in_file:
             # Read salt, nonce, and tag from the input file
             tag = in_file.read(16)
             salt = in_file.read(self.salt_size)
             nonce = in_file.read(self.nonce_size)
+            self.stats['tag'] = b64encode(tag).decode('utf-8')
+            self.stats['salt'] = b64encode(salt).decode('utf-8')
+            self.stats['nonce'] = b64encode(nonce).decode('utf-8')
 
             # Derive the same key using the password and salt
             password = self._read_password()
             key = self._generate_key(password, salt)
+            self.stats['key'] = b64encode(key).decode('utf-8')
 
             # Initialize decipher with AES alrorithm and GCM mode (with the nonce)
             # backend=default_backend() normally implies use of the normal
@@ -167,12 +215,16 @@ class AESCrypt(object):
                 while chunk := in_file.read(self.chunk_size):
                     decrypted_chunk = decryptor.update(chunk)
                     out_file.write(decrypted_chunk)
+                    i = i + 1
+                    if self.showprogress == True: bar.update(i)
 
                 # Finalize decryption (verifies integrity)
                 decryptor.finalize()
             out_file.close()
+        self.stats['outfile_size'] = os.path.getsize(output_file)
+        if self.showprogress == True: bar.finish()
         in_file.close()
-        self.log.info('Decrypted "{}"->"{}"'.format(self.filename, output_file))
+        if self.debug: self.log.debug('{}'.format(self._print_stats()))
         return
 
 

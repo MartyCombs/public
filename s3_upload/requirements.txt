@@ -1,0 +1,4 @@
+progressbar==2.5
+tqdm
+boto3
+botocore

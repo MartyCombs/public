@@ -41,7 +41,7 @@ This is a test file.
 EOF
 
 echo >&2 "Testing MetaData class."
-source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test-metadata.py
+source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test_metadata.py
 
 echo >&2 "Testing 'create_metadata.sh'"
 ${TOP_DIR}/bin/create_metadata.sh --backup_source="personal" \
@@ -53,7 +53,14 @@ echo >&2 "Contents of testfile.meta"
 echo >&2 "============================================================================"
 cat ${TEST_DIR}/testfile.meta
 echo >&2 "============================================================================"
-command rm -v ${TEST_DIR}/testfile.meta ${TEST_DIR}/testfile
+
+cat >&2 <<EOF
+
+Removing:
+    ${TEST_DIR}/testfile.meta
+    ${TEST_DIR}/testfile
+EOF
+command rm ${TEST_DIR}/testfile.meta ${TEST_DIR}/testfile
 exit ${?}
 
 

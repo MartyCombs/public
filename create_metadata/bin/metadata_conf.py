@@ -16,14 +16,31 @@ class MetadataConf(object):
     '''Manage metadata configuration file.
 
     ATTRIBUTES
-        backup_source           : A text label for the backup such as
-                                  'personal', 'work', 'photos', etc.
+        backup_source          A text label for the backup such as
+                               'personal', 'work', 'photos', etc.
 
-        encryption_key          : Key used to encrypt the backup.
+        encryption_key         Key used to encrypt the backup.
 
-        s3_url                  : S3 URL where to store the backup.
+        s3_url                 S3 URL where to store the backup.
 
-        s3_url_metadata         : S3 URL for the metadata file.
+        s3_url_metadata        S3 URL for the metadata file.
+
+    METHODS
+        read()                 Read the configuration file.
+
+        set_backup_source()    Set the backup source.
+
+        set_encryption_key()   Set the encryption key.
+
+        set_s3_url()           Set the S3 URL for the file.
+
+        set_s3_url_metadata()  Set the S3 URL for the metadata file.
+
+        print()                Print the values of the configuration for
+                               debug logging.
+
+        build()                Return full contents of the configuration file
+                               for writing.
 
     '''
 
@@ -31,7 +48,7 @@ class MetadataConf(object):
     DEF_CONFIG_FILE = TOP_DIR + os.sep + 'etc' + os.sep + 'metadata.cfg'
     DEF_CONFIG = {
         'backup_source'            : 'personal',
-        'encryption_key'           : 'GPG key',
+        'encryption_key'           : 'GPG',
         's3_url'                   : 's3://BUCKET_NAME/PATH',
         's3_url_metadata'          : 's3://BUCKET_NAME/PATH'
     }
@@ -69,7 +86,7 @@ class MetadataConf(object):
             cfg.get('DEFAULT', 'encryption_key'))
         self.set_s3_url(
             cfg.get('DEFAULT', 's3_url'))
-        set_s3_url_metadata(
+        self.set_s3_url_metadata(
             cfg.get('DEFAULT', 's3_url_metadata'))
         return
 
@@ -121,7 +138,7 @@ class MetadataConf(object):
 
 
 
-    def create(self):
+    def build(self):
         '''Create the metadata configuration file with all default values.
         '''
         div = '#{}#'.format('='*76)
@@ -133,7 +150,6 @@ class MetadataConf(object):
         cfg += '[DEFAULT]\n'
         for key in self.DEF_CONFIG.keys():
             cfg += '{} = {}\n'.format(key, self.DEF_CONFIG[key])
-        cfg += '\n\n\n'
         cfg += '{}\n# END\n{}\n'.format(div, div)
         return cfg
         with open(self.filename, 'w') as c:

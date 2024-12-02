@@ -1,0 +1,2 @@
+progressbar==2.5
+pycrypto==2.6.1

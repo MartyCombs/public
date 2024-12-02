@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 #=============================================================================#
-# Project Docs : https://github.com/MartyCombs/public/blob/main/create_metadata/README.md
+# Project Docs :
 # Ticket       :
-# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/bin/create_mdconfig.py
+# Source Ctl   :
 #=============================================================================#
 
 import sys
 import os
 import argparse
 from mylog import MyLog
-from metadata_conf import MetadataConf
+from aws_conf import AWSConf
 
 def parse_arguments():
     '''Parse arguments.
     '''
-    parser = argparse.ArgumentParser(description='Create a configuration file for metadata file settings.')
+    parser = argparse.ArgumentParser(description='''Create the configuration
+        file for S3 AWS uploads.
+        ''')
     parser.add_argument('--debug', action='store_true',
         default=False,
         help='Verbose output.')
@@ -35,7 +37,7 @@ def main():
     args = parse_arguments()
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
     log = l.log
-    myconf = MetadataConf(debug=args.debug, loglevel=args.loglevel)
+    myconf = AWSConf(debug=args.debug, loglevel=args.loglevel)
     conf_file = myconf.build()
     if args.stdout == True:
         print(conf_file)
@@ -59,5 +61,3 @@ if __name__ == "__main__":
 #=============================================================================#
 # END
 #=============================================================================#
-
-

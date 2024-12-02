@@ -69,6 +69,7 @@ class MetaData(object):
     def __init__(self, debug=None, loglevel='INFO', showprogress=False,
                  filename=None):
         self.debug = debug
+        self.loglevel = loglevel
         program=__class__.__name__
         l = MyLog(program=program, debug=debug, loglevel=loglevel)
         self.log = l.log
@@ -91,7 +92,7 @@ class MetaData(object):
         if not os.path.isfile(path): raise Exception('Not a file')
         if not os.access(path, os.R_OK): raise Exception('File not readable')
         self.filename = os.path.basename(path)
-        self.fullpath = os.path.realpath(self.filename)
+        self.fullpath = os.path.realpath(path)
         self.md_filename = self.filename + '.meta'
         return
 
@@ -103,6 +104,8 @@ class MetaData(object):
         self.log.debug('Setting "backup_source" to "{}"'.format(backup_source))
         self.stats['backup_source'] = backup_source
         return
+    def get_backup_source(self):
+        return self.stats['backup_source']
 
 
 
@@ -115,6 +118,8 @@ class MetaData(object):
         self.log.debug('Setting "backup_date" to "{}"'.format(backup_date))
         self.stats['backup_date'] = backup_date
         return
+    def get_backup_date(self):
+        return self.stats['backup_date']
 
 
 
@@ -130,6 +135,10 @@ class MetaData(object):
         self.stats['file_checksum_method'] = 'sha512'
         self._calculate_checksum()
         return
+    def get_file_size_bytes(self):
+        return self.stats['file_size_bytes']
+    def get_file_checksum_method(self):
+        return self.stats['file_checksum_method']
 
 
 
@@ -160,6 +169,8 @@ class MetaData(object):
         if self.showprogress == True: bar.finish()
         self.stats['file_checksum'] = '{}'.format(hasher.hexdigest())
         return
+    def get_file_checksum(self):
+        return self.stats['file_checksum']
 
 
 
@@ -169,6 +180,8 @@ class MetaData(object):
         self.log.debug('Setting "encryption_key" to "{}"'.format(key_used))
         self.stats['encryption_key'] = key_used
         return
+    def get_encryption_key(self):
+        return self.stats['encryption_key']
 
 
 
@@ -178,6 +191,8 @@ class MetaData(object):
         self.log.debug('Setting "s3_url" to "{}"'.format(s3_url))
         self.stats['s3_url'] = s3_url
         return
+    def get_s3_url(self):
+        return self.stats['s3_url']
 
 
 
@@ -187,6 +202,8 @@ class MetaData(object):
         self.log.debug('Setting "s3_url_metadata" to "{}"'.format(s3_url_metadata))
         self.stats['s3_url_metadata'] = s3_url_metadata
         return
+    def get_s3_url_metadata(self):
+        return self.stats['s3_url_metadata']
 
 
 
@@ -215,7 +232,7 @@ class MetaData(object):
         for k in self.metadata_file.keys():
             self.filename = str(k)
             for k2 in self.metadata_file[k].keys():
-                self.stats[k] = self.metadata_file[k][k2]
+                self.stats[k2] = self.metadata_file[k][k2]
         return
 
 

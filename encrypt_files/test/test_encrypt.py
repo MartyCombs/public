@@ -5,7 +5,7 @@ import os
 import shutil
 import hashlib
 from mylog import MyLog
-from crypt import AESCrypt
+from aes_crypt import AESCrypt
 
 
 def checksum(filename=None):
@@ -18,7 +18,7 @@ def checksum(filename=None):
 
 l = MyLog(debug=True)
 log = l.log
-log.debug('Testing encryption class crypt.AESCrypt')
+log.debug('Testing encryption class aes_crypt.AESCrypt')
 
 testfile1 = 'testfile.mp4'
 testfile2 = 'testfile-copy.mp4'

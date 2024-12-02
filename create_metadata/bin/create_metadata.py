@@ -16,10 +16,13 @@ from mylog import MyLog
 
 
 def parse_arguments():
-    '''Parse arguments.
-    '''
+    c = MetadataConf()
     parser = argparse.ArgumentParser(
-        description='Create file meta-data.',
+        description='''Create metadata files for the files listed for
+            later uploading to S3.  Parameters are configured based
+            on data in a config file {}.  Parameters included as
+            an option overrides configuration file settings.
+            '''.format(c.filename),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Script function arguments.
@@ -29,27 +32,33 @@ def parse_arguments():
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         help='Log level.')
     parser.add_argument('--force', action='store_true', default=False,
-        help='Overwrite existing metadata files.')
-    parser.add_argument('--showprogress', action='store_true', default=False,
-        help='Enable progress bar.')
+        help='Overwrite any existing metadata file.')
+    parser.add_argument('--showprogress', action='store_true',
+        default=False,
+        help='Enable progress bar for large files.')
 
     # Metadata file settings
-    parser.add_argument('--backup_source', action='store', type=str, default=None,
+    parser.add_argument('--backup_source', action='store',
+        type=str, default=None,
         help='Set backup source.')
-    parser.add_argument('--encryption_key', action='store', type=str, default=None,
-        help='Set the encryption key used.')
-    parser.add_argument('--s3_url', action='store', type=str, default=None,
+    parser.add_argument('--encryption_key', action='store',
+        type=str, default=None,
+        help='Set the encryption key and method used.')
+    parser.add_argument('--s3_url', action='store',
+        type=str, default=None,
         help='Set S3 URL where the backup is stored.')
-    parser.add_argument('--s3_url_metadata', action='store', type=str, default=None,
+    parser.add_argument('--s3_url_metadata', action='store',
+        type=str, default=None,
         help='Set S3 URL where the metadata file is stored.')
-    parser.add_argument('files', action='store', nargs='+', type=str, default=None,
+    parser.add_argument('files', action='store', nargs='+',
+        type=str, default=None,
         help='Files to process.')
     return parser.parse_args()
 
 
 
 def precheck(files=None, log=None, args=None):
-    '''Parse the list of files passed and returns a list of full paths to
+    '''Examine the list of files passed and returns a list of full paths to
     those files which pass the tests.
     '''
     clean_list = []
@@ -75,7 +84,7 @@ def precheck(files=None, log=None, args=None):
 
 
 def build_files(files=None, log=None, args=None, cfg=None):
-    '''Takes a list of full paths and builds a set of metadata files for
+    '''Take a list of full paths and builds a set of metadata files for
     each file passed.
     '''
     md_files = {}
@@ -114,7 +123,7 @@ def main():
     # file or overriddden with command options.
     settings = {
         'backup_source'        : 'personal',
-        'encryption_key'       : 'GPG key',
+        'encryption_key'       : 'GPG',
         's3_url'               : 's3://backup',
         's3_url_metadata'      : 's3://backup'
     }
