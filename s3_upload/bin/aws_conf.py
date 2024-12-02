@@ -16,7 +16,8 @@ class AWSConf(object):
 
     ATTRIBUTES
         mp_threshold           File size in bytes above which a file is uploaded
-                               to S3 using multipart upload.
+                               to S3 using multipart upload with BOTO3 S3 resource
+                               with threading instead of the BOTO3 S3 client.
 
         max_concurrency        Maximum concurrent uploads to S3 for a multipart
                                upload.
@@ -25,20 +26,19 @@ class AWSConf(object):
 
 
     METHODS
-        read()                 Read the configuration file.
+        read                   Read the configuration file.
 
-        set_backup_source()    Set the backup source.
+        set_mp_threshold       Set the value for the multipart threshold.
 
-        set_encryption_key()   Set the encryption key.
+        set_max_concurrency    Set max_concurrency.
 
-        set_s3_url()           Set the S3 URL for the file.
+        set_mp_chunksize       Set mp_chunksize.
 
-        set_s3_url_metadata()  Set the S3 URL for the metadata file.
 
-        print()                Print the values of the configuration for
+        print                  Print the values of the configuration for
                                debug logging.
 
-        build()                Return full contents of the configuration file
+        build                  Return full contents of the configuration file
                                for writing.
 
     '''
@@ -140,17 +140,18 @@ class AWSConf(object):
 # Configuration file for metadata file settings.
 #       '''.format(__class__)
         header += '''
-# mp_threshold                 Threshold in bytes where an upload to S3 is broken
-#                              into a multipart upload.
+# mp_threshold                 Files above this threshold (in bytes) will
+#                              use multipart upload with BOTO3 S3 resource
+#                              and threads instead of the BOTO3 S3 client.
 #                              [DEFAULT: {}] (32 MB)
 #       '''.format(self.DEF_CONFIG['mp_threshold'])
         header += '''
-# max_concurrency              Maximum concurrent uploads running.
+# max_concurrency              Maximum concurrent uploads to run.
 #                              [DEFAULT: {}]
 #       '''.format(self.DEF_CONFIG['max_concurrency'])
         header += '''
-# mp_chunksize                 Threshold in bytes where an upload to S3 is broken
-#                              into a multipart upload.
+# mp_chunksize                 Size of chunks (in bytes) for a multipart
+#                              upload.
 #                              [DEFAULT: {}] (32 KB)
 #       '''.format(self.DEF_CONFIG['mp_threshold'])
         return header
