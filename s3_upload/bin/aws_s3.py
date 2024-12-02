@@ -47,26 +47,37 @@ class ProgressPercentage(object):
 
 
 class AWSS3(object):
-    '''Create AWS S3 connections - both client and resoure.
+    '''Create AWS BOTO3 S3 connections - both client and resoure.
 
-    Client connections are used for files smaller than MP_THRESHOLD.
-    Resource connections with threading are used for files larger than
-    MP_THRESHOLD.
+    S3 client connections are used for files smaller than MP_THRESHOLD
+    as defined in the configuration file - AWSS3.DEF_CREDS_FILE.
+
+    S3 resource connections with multipart upload and threading are
+    used for files larger than MP_THRESHOLD.
 
     ATTRIBUTES
         debug          Debug mode.
+
         loglevel       Log level.
+
         client         S3 client.
+
         resource       S3 resource.
-        bucketlist     List of buckets.
 
     METHODS
-        get_client()       Return the S3 client.
-        get_resource()     Return the S3 resource.
-        connect()          Connect to S3 both client and resource.
-        bucket_exists()    Return True if bucket exists.  False otherwise.
-        prettyprint()      Return a formatted report for debug logging.
-        upload()           Upload a file to S3.
+        get_client         Return the S3 client.
+
+        get_resource       Return the S3 resource.
+
+        connect            Connect to S3 both client and resource.
+
+        bucket_exists      Return True if bucket exists.
+                           False otherwise.
+
+        prettyprint        Return a formatted number.
+
+        upload             Upload a file to S3.
+
     '''
 
     TOP_DIR = str(os.sep).join(os.path.realpath(__file__).split(os.sep)[:-2])
@@ -85,13 +96,13 @@ class AWSS3(object):
 
         self.client = None
         self.resource = None
-        self.bucketlist = None
+        self._bucketlist = None
         return
 
 
 
     def get_client(self):
-        '''Return the BOTO S3 client.
+        '''Return the BOTO S3 client.  If one does not exist, connect first.
         '''
         if self.client == None: self.connect()
         return self.client
@@ -99,7 +110,7 @@ class AWSS3(object):
 
 
     def get_resource(self):
-        '''Return the BOTO S3 client.
+        '''Return the BOTO S3 client.  If one does not exist, connect first.
         '''
         if self.resource == None: self.connect()
         return self.resource
@@ -122,6 +133,8 @@ class AWSS3(object):
 
     def connect(self):
         '''Connect to S3 using credentials stored in a separate file.
+        Immediately clear the values for the access and secret keys as
+        soon as a client and resource are obtained.
         '''
         creds = self._read_credentials()
         try:
@@ -156,16 +169,16 @@ class AWSS3(object):
         '''Return True if the bucket exists, otherwise return False.
         '''
         self.log.debug('Checking for bucket {}'.format(bucket_name))
-        if self.bucketlist == None: self._build_bucket_list()
-        if bucket_name in self.bucketlist: return True
+        if self._bucketlist == None: self._build_bucket_list()
+        if bucket_name in self._bucketlist: return True
         return False
 
     def _build_bucket_list(self):
         if self.client == None: self.connect()
         resp = self.client.list_buckets()
-        self.bucketlist = []
+        self._bucketlist = []
         for bucket in resp['Buckets']:
-            self.bucketlist.append(bucket['Name'])
+            self._bucketlist.append(bucket['Name'])
         return
 
 
@@ -193,7 +206,11 @@ class AWSS3(object):
 
 
     def upload(self, srcfile=None, bucket=None, key=None, showprogress=False):
-        '''Upload a file to S3 through a single stream.  Show progress if requested.
+        '''Upload a file to S3 through a single stream.  Show progress if requested
+        (i.e. showprogress=True)
+
+        If the file size is above the value defined in 'mp_threshold' in the
+        config file, use multipart upload with threading instead.
         '''
         if os.path.getsize(srcfile) > self.cfg.mp_threshold:
             response = self._mp_upload(srcfile=srcfile,
@@ -236,8 +253,9 @@ class AWSS3(object):
 
 
     def _mp_upload(self, srcfile=None, bucket=None, key=None, showprogress=False):
-        '''Upload a file to S3 through a single stream.
-        Show progress if requested.
+        '''Upload a file to S3 using multipart upload with threading.
+
+        Show progress using tqdm if requested (i.e. showprogress=True).
         '''
         if self.resource == None: self.connect()
         size_bytes = os.path.getsize(srcfile)

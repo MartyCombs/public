@@ -41,7 +41,15 @@ def parse_arguments():
 
 
 def build_list(args=None, filelist=None):
-    '''Build a list of files to upload.
+    '''Build a diction files to upload.  The dictionary is
+    formatted as:
+
+        FULLPATH_TO_SRC {
+            'dst_url' : S3_URL,
+            'bucket'  : BUCKET_NAME,
+            'key'     : S3_KEY
+        }
+
     '''
     upload_list = {}
     md = MetaData(debug=args.debug, loglevel=args.loglevel)
@@ -88,6 +96,8 @@ def build_list(args=None, filelist=None):
 
 
 def _check_metadata_file(mdref=None, file=None):
+    '''Confirm that the metadata file was correctly read.
+    '''
     if mdref.get_s3_url() == None or mdref.get_s3_url_metadata() == None:
         fileformat = json.dumps(mdref.MDINIT, indent=4)
         raise Exception('Metadata format for "{}" not understood.\n\n{}'.format(
@@ -99,7 +109,8 @@ def _check_metadata_file(mdref=None, file=None):
 def _get_bucket_and_key(url=None):
     '''Return S3 bucket and key from a URL.
 
-        s3://BUCKET/KEY
+    PARAM          s3://BUCKET/KEY
+    RETURN         (bucket, key)
 
     '''
     bucket = url.split('/')[2]
@@ -110,7 +121,7 @@ def _get_bucket_and_key(url=None):
 
 def get_report(upload_list=None):
     '''Return a nicely formatted report of files and their destination bucket
-    and key for S3.
+    and key for S3 based on the internal upload list.
     '''
     rpt = '{}\n'.format('='*76)
     rpt += 'Files for upload to S3.\n\n'
