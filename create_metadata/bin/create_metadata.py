@@ -131,7 +131,7 @@ def main():
     args = parse_arguments()
     l = MyLog(program=__name__, debug=args.debug, loglevel=args.loglevel)
     log = l.log
-    metadata_candidates = precheck(files=args.files, log=log, args=args.files)
+    metadata_candidates = precheck(files=args.files, log=log, args=args)
 
     # Read settings from the configuration file and override any passed as
     # arguments.

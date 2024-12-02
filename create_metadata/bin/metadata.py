@@ -11,7 +11,7 @@ import re
 import time
 import datetime
 import hashlib
-import progressbar
+from tqdm import tqdm
 import json
 from mylog import MyLog
 
@@ -29,6 +29,8 @@ class MetaData(object):
         stats             : Data structure for metadata file. (See below.)
 
     DATA STRUCTURE
+        This will become the contents of 'FILENAME.meta'
+
         FILENAME {
             'backup_source'        : Backup source.
             'backup_date'          : Date of last backup as 'Y-M-D H:M:S TZ'.
@@ -146,27 +148,23 @@ class MetaData(object):
         self.log.debug('Calculating SHA512 sum of "{}"'.format(self.filename))
 
         # Set up a progress bar to let the user know we're still doing something.
-        readbuff = 65536
+        readbuff = 64 * 1024  # 64KB
         hasher = hashlib.sha512()
-        progressmax = self.stats['file_size_bytes'] / readbuff
-        if self.stats['file_size_bytes'] % readbuff > 0:
-            progressmax += 1
         if self.showprogress == True:
-            widgets = [progressbar.ETA(), ' ',
-                       progressbar.Bar('=', '[', ']', ' '), ' ',
-                       progressbar.Percentage()]
-            bar = progressbar.ProgressBar(widgets=widgets,
-                                          maxval=progressmax,
-                                          term_width=80).start()
+            filesize = os.path.getsize(self.filename)
+            progress_bar = tqdm(total=filesize,
+                                ascii=" >>>>>>>>>=",
+                                unit='B',
+                                unit_scale=True,
+                                desc=self.filename)
+
         with open(self.fullpath, 'rb') as f:
-            i = 0
             while True:
                 buff = f.read(readbuff)
                 if not buff: break
                 hasher.update(buff)
-                i = i + 1
-                if self.showprogress == True: bar.update(i)
-        if self.showprogress == True: bar.finish()
+                if self.showprogress == True: progress_bar.update(len(buff))
+        if self.showprogress == True: progress_bar.close()
         self.stats['file_checksum'] = '{}'.format(hasher.hexdigest())
         return
     def get_file_checksum(self):

@@ -36,31 +36,34 @@ echo >&2 "Testing 'create_mdconfig.sh --stdout'"
 ${TOP_DIR}/bin/create_mdconfig.sh --stdout
 
 TEST_DIR="${TOP_DIR}/test"
-cat >${TEST_DIR}/testfile <<EOF
+TEST_FILE="testfile.txt"
+cat >${TEST_DIR}/${TEST_FILE} <<EOF
 This is a test file.
 EOF
 
 echo >&2 "Testing MetaData class."
-source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test_metadata.py
+source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test_metadata.py ${TEST_FILE}
 
 echo >&2 "Testing 'create_metadata.sh'"
 ${TOP_DIR}/bin/create_metadata.sh --backup_source="personal" \
     --encryption_key="a different key" \
     --s3_url="s3://mybucket/path" \
     --s3_url_metadata="s3://anotherbucket/differentpath" \
-    ${TEST_DIR}/testfile
-echo >&2 "Contents of testfile.meta"
+    --force \
+    --debug \
+    ${TEST_DIR}/${TEST_FILE}
+echo >&2 "Contents of ${TEST_FILE}.meta"
 echo >&2 "============================================================================"
-cat ${TEST_DIR}/testfile.meta
+cat ${TEST_DIR}/${TEST_FILE}.meta
 echo >&2 "============================================================================"
 
 cat >&2 <<EOF
 
 Removing:
-    ${TEST_DIR}/testfile.meta
-    ${TEST_DIR}/testfile
+    ${TEST_DIR}/${TEST_FILE}.meta
+    ${TEST_DIR}/${TEST_FILE}
 EOF
-command rm ${TEST_DIR}/testfile.meta ${TEST_DIR}/testfile
+command rm ${TEST_DIR}/${TEST_FILE}.meta ${TEST_DIR}/${TEST_FILE}
 exit ${?}
 
 
