@@ -12,6 +12,7 @@ from mylog import MyLog
 from aes_crypt import AESCrypt
 
 
+
 def parse_arguments():
     '''Parse arguments.
     '''
@@ -32,6 +33,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
+
 def main():
     args = parse_arguments()
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
@@ -49,3 +51,8 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
+
+
+#=============================================================================#
+# END
+#=============================================================================#
