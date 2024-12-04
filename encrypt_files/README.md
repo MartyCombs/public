@@ -2,87 +2,103 @@
 Encrypt or decrypt files using the top level wrapper scripts `encrypt_files.sh`
 or `decrypt_files.sh` respectively.
 
-Encryption/Decryption methods used - as well as subscripts called - are
-determined by a configuration file `etc/encryption_config.cfg`
+Configuration settings for all encryption / decryption methods are managed by 
+`encryption_config.cfg`.
 
-All options are passed on to lower level, sub-scripts.  If the sub-script does
-not understand a given option, it is ignored with a warning message.  While 
-the scripts around AES-GCM encryption include options `--showprogress` and 
-`--loglevel=`, scripts around GPG encryption do not currently offer these
-options.
+Wrapper scripts pass all options to lower level, sub-scripts.  If the 
+sub-script does not understand a given option, it is ignored with a 
+warning message.  For example, scripts around GPG ignore options 
+`--showprogress` and `--loglevel`.
 
 The `--help` option is available for all sub-scripts.
 
-Specific encryption/decryption schemes follow their own path of sub-scripts and
-wrapper scripts.  Those workflows are outlined below.
 
-# Encryption / Decryption Methods
+# Encryption / Decryption Workflow
 ## AES-GCM
-Encryption using AES-GCM reads, encrypts or decrypts, and writes an output file
-in chunks.  A salt and nonce are generated.  The master key/password is read
-and used with the salt to generate the encryption key.
+For AES-GCM encryption, a master key is read from a file, a salt and nonce 
+are generated, and the file is read in chunks, encrypted, and written back 
+into the same directory.  The encrypted file has `.enc` appended to the end 
+of the name.  After encryption, a tag is included in the file to ensure
+file authenticity.
 
-The encryption key and nonce are used to encrypt the file in chunks.  Once the
-file is encrypted, a tag is generated to ensure authenticity.
-
-The tag, salt, and nonce are all included within the encrypted file for
-decrypting.
-
-## Precautions
-**Proper management of the master key file `mykey` is critical.**
-Minimal permissions should be set on this file so that its contents are not
-compromised.  It should also be backed up.  Encrypted files cannot be
-decrypted if this key is ever lost or changed.
-
-
-### AES-GCM Scripts
-* `aes_encrypt.sh` - Wrapper to ensure python virtual environment with dependencies
-is created and used.
-  - `aes_encrypt.py` - Called by `aes_encrypt.sh`.  Encrypts multiple files.
-  - `aes_crypt.py` - Class used to encrypt or decrypt the file.
-
-* `aes_decrypt.sh` - Wrapper to ensure python virtual environment with dependencies
-is created and used.
-  - `aes_decrypt.py` - Called by `aes_decrypt.sh`.  Decrypts multiple files.
-  - `aes_crypt.py` - Class used to encrypt or decrypt the file.
+For decryption, the file is expected to have a `.enc` extension in the name.
+The necessary information - tag, salt, nonce - are read from the file, the
+encrypted file is read in chunks, decrypted, and written back into the 
+same directory.  The decrypted will is assumed to be the same name as the
+encrypted file, but without the `.enc` name extension.
 
 
 ## GPG
-GPG wrappers scripts only store the recipient key used in encrypting or
-decrypting files.  The wrappers are very simple and assumes the user has
-gpg installed.  
+The GPG wrappers scripts are a minimal wrapper around the `gpg` executable.
+During encryption, only `gpg_key` is read from the configuration file 
+`encryption_config.cfg` to retrieve the name of the GPG key to use to 
+pass on to `gpg` to do the encryption.
 
-Key creation and management is assumed to be done by the user through gpg.
+During decryption, the path to the encrypted file is passed on to `gpg`
+which does the prompting for the passphrase associated with the 
+encryption key on the terminal.  Because of this prompt dependency at the
+terminal, decryption through GPG **cannot easily be enclosed in a script.**
 
-### GPG Scripts
+The user is expected to handle key creation and management through the 
+`gpg` executable.
+
+
+# Configuration
+All configuration files are located in the `./etc` subdirectory.
+
+* `encryption_config.cfg` - All settings impact AES-GCM encryption / decryption
+**except** `gpg_key` which is used for GPG encryption only.  A file with
+default values can be generated using `create_conf.py`.
+
+* `mykey` - File containing the master key used in AES-GCM encryption /
+decryption.  The helper script `gen_new_key.py` will echo a random key to 
+standard output (STDOUT) which the user can put into the file. **Please
+CAREFULLY read the Precautions section regarding this file.**
+
+
+# Code
+__Running top level scripts with `--help` will list options available.__
+
+## AES
+* `aes_encrypt.sh` - Top level script to run for encrypting multiple files 
+with AES-GCM.  The script passes all options to lower level scripts.
+  - `aes_encrypt.py` - Called by `aes_encrypt.sh`.
+  - `aes_crypt.py` - Python class which does all the work.
+* `aes_decrypt.sh` - Top level script to run for decrypting multiple files 
+with AES-GCM.  The script passes all options to lower level scripts.
+  - `aes_decrypt.py` - Called by `aes_decrypt.sh`.
+  - `aes_crypt.py` - Python class which does all the work.
+
+## GPG
 * `gpg_encrypt.sh` - Wrapper for `gpg` to encrypt files.
-
 * `gpg_decrypt.sh` - Wrapper for `gpg` to decrypt files.
 
-# Configuration Files
-* `encryption_config.cfg` - Configuration file for AES-GCM and GPG 
-parameters.  A configuration file with default settings can be 
-generated using the `create_conf.py` helper script.
 
-* `mykey` - File for the master key used in AES-GCM encryption.  A random
-key can be generated using the `gen_new_key.py` helper script.
-
-# Helper Scripts / Code
+## Helper Scripts
+* `enc_conf.py` - Class used to read the configuration file and pass values
+on to python scripts.
 * `create_conf.py` - Creates the config file with default settings.
-
-* `enc_conf.py` - Class used to manage the configuration file.
-
+* `mylog.py` - Custom python logger class.
 * `gen_new_key.py` - Generates a 32-bit random key which can be used as the 
-master key for AES-GCM encryption in lieu of one created by the user.  See
-the warnings about the master key in the AES-GCM section.
+master key for AES-GCM encryption in lieu of one created by the user.  **Read
+the Precautions section carefully.**
 
-* `mylog.py` - Custom python logger.
+# Precautions
+**Proper management of the file `mykey` is critical.**
+Anyone reading the `mykey` file will be able to decrypt files encrypted with it.
+Ensure that the file has minimal access permissions.  The key contained 
+in the file is the single point of failure for properly decrypting any files
+where it was used to encrypt.
+
+The key should also be backed up.  **Encrypted files cannot be decrypted** if 
+the master key stored in this file is ever altered or lost.  If the user 
+chooses to rotate the key, they will be **unable** to decrypt any files 
+encrypted with the old key without having a backup copy of the original key
+stored somewhere safely.
 
 # Testing
-Run `test/test_encrypt.sh` to test AES-GCM encryption.  After making a backup 
-copy of the key file containing the master key, a random key is generated.
-The test file is encrypted, copied to a different name, and decrypted.
-If the sum of both files matches, the test passes.
+`test_encrypt.sh` - Runs some rudimentary tests of AES-GCM encryption
+and decryption.
+  - `test_encrypt.py` - Called by `test_encrypt.sh`.
 
-No explicit testing of GPG encryption is done.  The user can run the
-encryption and decryption wrapper scripts and test.
+No explicit testing of GPG encryption is done.
