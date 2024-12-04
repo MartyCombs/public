@@ -205,7 +205,7 @@ class EncConf(object):
 
 
     def build(self):
-        '''Create the metadata configuration file with all default values.
+        '''Create the metadata configuration file for writing.
         '''
         div = '#{}#'.format('='*76)
         cfg = ''
