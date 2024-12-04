@@ -15,19 +15,38 @@ class EncConf(object):
     '''Manage encryption config.
 
     ATTRIBUTES
-        encryption_method       : Method used to encrypt and decrypt.  The method
-                                  must be in the list of known methods.
+        debug                   Enable debug mode.
 
-        gpg_key                 : If the encryption / decryption method is GPG,
-                                  use this key.
+        loglevel                Set the python log level.
 
-        keyfile                 : File containing key used to encrypt the backup.
+    METHODS
+        read                    Read the configuration file.
 
-        chunk_size_kbytes       : Chunk size for reading and writing.
+        set_encryption_method   The encryption method for encrypting and
+                                decrypting files.  It must be one of the
+                                list of understood encryption methods.
+                                {}
 
-        key_size_bytes          : Key size in bytes
+        set_gpg_key             If the encryption / decryption method is GPG,
+                                use this key.
 
-        nonce_size_bytes        : Nonce size in bytes
+        set_keyfile             File containing the master key used to by
+                                AES-GCM to encrypt/decrypt a file.
+
+        set_chunk_size_kbytes   Chunk size for reading and writing while
+                                encrypting or decrypting.
+
+        set_key_size_bytes      Size of subsequent key generated from the
+                                master key and a salt used to encrypt or
+                                decrypt the file.
+
+        set_nonce_size_bytes    Nonce size.
+
+        print                   Print the configuration of parameters for
+                                nice logging.
+
+        build                   Build and return the configuration file for
+                                writing.
 
     '''
 
@@ -105,6 +124,11 @@ class EncConf(object):
 
 
     def set_encryption_method(self, encryption_method=None):
+        '''Set the encryption method to one of the accepted methods understood
+        by this code.
+
+        {}
+        '''.format(self.ENCRYPTION_METHODS)
         if encryption_method == None: return
         if encryption_method not in self.ENCRYPTION_METHODS:
             raise Exception('Encryption method "{}" not understood'.format(
@@ -115,6 +139,9 @@ class EncConf(object):
 
 
     def set_gpg_key(self, gpg_key=None):
+        '''If encryption_method is "GPG", set the key which will be used to
+        encrypt or decrypt the file.
+        '''
         if gpg_key == None: return
         self.gpg_key = gpg_key
         return
@@ -122,6 +149,10 @@ class EncConf(object):
 
 
     def set_keyfile(self, keyfile=None):
+        '''If encryption_method is "AES-GCM" set the file containing the
+        master key to encrypt or decrypt files.  The master key is used
+        to derive another key which will be used to do the encryption.
+        '''
         if keyfile == None: return
         self.keyfile = keyfile
         return
@@ -129,6 +160,9 @@ class EncConf(object):
 
 
     def set_chunk_size_kbytes(self, chunk_size_kbytes=None):
+        '''For large files, set the kilobytes for the chunks which will be
+        encrypted.
+        '''
         if chunk_size_kbytes == None: return
         self.chunk_size_kbytes = int(chunk_size_kbytes)
         return
@@ -136,6 +170,9 @@ class EncConf(object):
 
 
     def set_key_size_bytes(self, key_size_bytes=None):
+        '''Set the size of the key generated from the master key which
+        will be used to encrypt or decrypt files.
+        '''
         if key_size_bytes == None: return
         self.key_size_bytes = int(key_size_bytes)
         return
@@ -143,6 +180,8 @@ class EncConf(object):
 
 
     def set_nonce_size_bytes(self, nonce_size_bytes=None):
+        '''Set the size of the nonce used to encrypt or decrypt files.
+        '''
         if nonce_size_bytes == None: return
         self.nonce_size_bytes = int(nonce_size_bytes)
         return
@@ -150,6 +189,8 @@ class EncConf(object):
 
 
     def print(self):
+        '''Report on the details read from the configuration file.
+        '''
         report = '{}\n'.format('='*76)
         report += '{:<25} {}\n'.format('encryption_method', self.encryption_method)
         report += '{:<25} {}\n'.format('gpg_key', self.gpg_key)
@@ -163,7 +204,7 @@ class EncConf(object):
 
 
 
-    def create(self):
+    def build(self):
         '''Create the metadata configuration file with all default values.
         '''
         div = '#{}#'.format('='*76)
@@ -173,19 +214,20 @@ class EncConf(object):
         cfg += '{}'.format(self._conf_header())
         cfg += '\n'
         cfg += '[DEFAULT]\n'
-        for key in self.DEF_CONFIG.keys():
-            cfg += '{} = {}\n'.format(key, self.DEF_CONFIG[key])
-        cfg += '\n\n\n'
-        cfg += '{}\n# END\n{}\n'.format(div, div)
+        cfg += 'encryption_method = {}\n'.format(self.encryption_method)
+        cfg += 'gpg_key = {}\n'.format(self.gpg_key)
+        cfg += 'keyfile = {}\n'.format(self.keyfile)
+        cfg += 'chunk_size_kbytes = {}\n'.format(self.chunk_size_kbytes)
+        cfg += 'key_size_bytes = {}\n'.format(self.key_size_bytes)
+        cfg += 'nonce_size_bytes = {}\n'.format(self.nonce_size_bytes)
+        cfg += '\n{}\n# END\n{}\n'.format(div, div)
         return cfg
-        with open(self.filename, 'w') as c:
-            c.write(cfg)
-        self.log.info('Created config "{}"'.format(self.DEF_CONFIG_FILE))
-        return
 
 
 
     def _conf_header(self):
+        '''Header for the configuration file.
+        '''
         header = ''
         header += '''#
 # Created by
