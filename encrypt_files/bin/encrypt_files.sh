@@ -5,6 +5,9 @@
 # Source Ctl   : 
 #=============================================================================#
 
+# Wrapper for encrypting files.  The encryption mehod used is determined by 
+# the setting of 'encryption_method' within the configuration file.
+
 set -euf -o pipefail
 # -e           : exit immedialy if any command fails
 # -u           : fail and exit immediatly on unset variables
