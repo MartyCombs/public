@@ -96,6 +96,14 @@ if [[ ${#} -eq 0 ]]; then
     exit 1
 fi
 
+# Confirm that target files will not be overwritten.
+for _file in $@; do
+    if [[ -e ${_file}.asc ]]; then
+        loggit ${PROG} FATAL "Cannot encrypt!  Target file already exists \"${_file}.asc\""
+        exit 1
+    fi
+done
+
 # Encrypt files.
 for _file in $@; do
     loggit ${PROG} INFO "Encrypting ${_file} to ${_file}.asc"

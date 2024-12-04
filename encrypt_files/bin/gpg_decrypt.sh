@@ -100,6 +100,15 @@ for _file in $@; do
     fi
 done
 
+# Confirm that target files will not be overwritten.
+for _file in $@; do
+    _decrypted=${_file%%.asc}
+    if [[ -e ${_decrypted} ]]; then
+        loggit ${PROG} FATAL "Cannot decrypt!  Target file already exists \"${_decrypted}\""
+        exit 1
+    fi
+done
+
 # Decrypt files
 for _file in $@; do
     OUTFILE="${_file%%.asc}"
