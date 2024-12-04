@@ -79,5 +79,10 @@ the warnings about the master key in the AES-GCM section.
 * `mylog.py` - Custom python logger.
 
 # Testing
-Run `test/test_encrypt.sh` to test AES-GCM encryption.  A backup copy of 
-the key file containing the master key.
+Run `test/test_encrypt.sh` to test AES-GCM encryption.  After making a backup 
+copy of the key file containing the master key, a random key is generated.
+The test file is encrypted, copied to a different name, and decrypted.
+If the sum of both files matches, the test passes.
+
+No explicit testing of GPG encryption is done.  The user can run the
+encryption and decryption wrapper scripts and test.
