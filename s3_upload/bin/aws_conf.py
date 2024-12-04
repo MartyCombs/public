@@ -7,7 +7,6 @@
 
 import os
 import configparser
-import boto3
 from mylog import MyLog
 
 
@@ -15,24 +14,22 @@ class AWSConf(object):
     '''Manage the AWS S3 configuration file.
 
     ATTRIBUTES
-        mp_threshold           File size in bytes above which a file is uploaded
-                               to S3 using multipart upload with BOTO3 S3 resource
-                               with threading instead of the BOTO3 S3 client.
+        debug                   Enable debug mode.
 
-        max_concurrency        Maximum concurrent uploads to S3 for a multipart
-                               upload.
-
-        mp_chunksize           Chunk size for multipart upload.
+        loglevel                Set the python log level.
 
 
     METHODS
         read                   Read the configuration file.
 
-        set_mp_threshold       Set the value for the multipart threshold.
+        set_mp_threshold       File size in bytes above which a file is uploaded
+                               to S3 using multipart upload with BOTO3 S3 resource
+                               with threading instead of the BOTO3 S3 client.
 
-        set_max_concurrency    Set max_concurrency.
+        set_max_concurrency    Maximum concurrent uploads to S3 for a multipart
+                               upload.
 
-        set_mp_chunksize       Set mp_chunksize.
+        set_mp_chunksize       Chunk size for multipart upload.
 
 
         print                  Print the values of the configuration for
@@ -85,38 +82,49 @@ class AWSConf(object):
 
 
     def set_mp_threshold(self, mp_threshold=None):
+        '''Set the bytes at which an upload to S3 will use multipart upload.
+        '''
         if mp_threshold == None: return
         self.mp_threshold = int(mp_threshold)
+        self.log.debug('Set mp_threshold to {}'.format(mp_threshold))
         return
 
 
 
     def set_max_concurrency(self, max_concurrency=None):
+        '''Set maximum concurrency of uploads for multipart upload.
+        '''
         if max_concurrency == None: return
         self.max_concurrency = int(max_concurrency)
+        self.log.debug('Set max_concurrency to {}'.format(max_concurrency))
         return
 
 
 
     def set_mp_chunksize(self, mp_chunksize=None):
+        '''Set the chunk size for multipart upload.
+        '''
         if mp_chunksize == None: return
         self.mp_chunksize = int(mp_chunksize)
+        self.log.debug('Set mp_chunksize to {}'.format(mp_chunksize))
         return
 
 
 
     def print(self):
-        report = '{}\n'.format('='*76)
-        report += '{:<25} {}\n'.format('mp_threshold', self.mp_threshold)
-        report += '{:<25} {}\n'.format('max_concurrency', self.max_concurrency)
-        report += '{:<25} {}\n'.format('mp_chunksize', self.mp_chunksize)
-        report += '{}\n'.format('='*76)
-        return report
+        '''Report on the details read from the configuration file.
+        '''
+        rpt = '{}\n'.format('='*76)
+        rpt += '{:<25} {}\n'.format('mp_threshold', self.mp_threshold)
+        rpt += '{:<25} {}\n'.format('max_concurrency', self.max_concurrency)
+        rpt += '{:<25} {}\n'.format('mp_chunksize', self.mp_chunksize)
+        rpt += '{}\n'.format('='*76)
+        return rpt
 
 
 
     def build(self):
-        '''Create the metadata configuration file with all default values.
+        '''Create the metadata configuration file for writing.
         '''
         div = '#{}#'.format('='*76)
         cfg = ''
@@ -125,14 +133,17 @@ class AWSConf(object):
         cfg += '{}'.format(self._conf_header())
         cfg += '\n'
         cfg += '[DEFAULT]\n'
-        for key in self.DEF_CONFIG.keys():
-            cfg += '{} = {}\n'.format(key, self.DEF_CONFIG[key])
-        cfg += '{}\n# END\n{}\n'.format(div, div)
+        cfg += 'mp_threshold = {}\n'.format(self.mp_threshold)
+        cfg += 'max_concurrency = {}\n'.format(self.max_concurrency)
+        cfg += 'mp_chunksize = {}\n'.format(self.mp_chunksize)
+        cfg += '\n\n{}\n# END\n{}\n'.format(div, div)
         return cfg
 
 
 
     def _conf_header(self):
+        '''Header for the configuration file.
+        '''
         header = ''
         header += '''#
 # Created by
