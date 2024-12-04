@@ -1,0 +1,12 @@
+{
+    "testfile.txt": {
+        "backup_date": "2024-12-04 21:07:37 -0600",
+        "backup_source": "personal",
+        "encryption_key": "GPG",
+        "file_checksum": "10e0c95b5e9e286132b4ec7e8fc68c6e7a58a48f172ff50813e85b9c41dec4bc10bdbc4d941e61de45b3ceffc24e8edc09ce650d1bab24466eadbaa5c52f5619",
+        "file_checksum_method": "sha512",
+        "file_size_bytes": 20,
+        "s3_url": "s3://BUCKET_NAME/PATH/testfile.txt",
+        "s3_url_metadata": "s3://BUCKET_NAME/PATH/testfile.txt.meta"
+    }
+}

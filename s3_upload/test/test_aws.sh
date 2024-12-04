@@ -26,9 +26,9 @@ fi
 
 # Prepare path to import python modules from bin
 if [[ -z ${PYTHONPATH+x} ]]; then
-    export PYTHONPATH="${TOP_DIR}/bin"
+    export PYTHONPATH="${TOP_DIR}/bin:${TOP_DIR}/create_metadata/bin"
 else
-    export PYTHONPATH="${PYTHONPATH}:${TOP_DIR}/bin"
+    export PYTHONPATH="${PYTHONPATH}:${TOP_DIR}/bin:${TOP_DIR}/create_metadata/bin"
 fi
 
 if [[ ${#} -lt 1 ]]; then
