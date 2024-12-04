@@ -92,6 +92,9 @@ class AESCrypt(object):
     def _read_master_key(self):
         '''Read the master key and convert it to bytes.
         '''
+        if os.path.getsize(self._keyfile) == 0:
+            raise Exception(
+                'Master key file is empty "{}"'.format(self._keyfile))
         with open(self._keyfile, 'r') as f:
             key = f.read().strip()
         f.close()
