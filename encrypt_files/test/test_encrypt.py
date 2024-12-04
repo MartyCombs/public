@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#=============================================================================#
+# Project Docs :
+# Ticket       :
+# Source Ctl   :
+#=============================================================================#
 
 import sys
 import os
@@ -44,13 +49,13 @@ rpt += '{:<20} {}\n'.format(testfile2, testfile2_sum)
 rpt += '\n{}\n'.format('='*80)
 log.debug('{}'.format(rpt))
 if testfile1_sum == testfile2_sum:
-    log.info('Original file contents match after decoding.')
+    log.info('PASSED: Original file contents match after decoding.')
     for f in [testfile1 + '.enc',
               testfile2,
               testfile2 + '.enc']:
         os.remove(f)
 else:
-    log.error('Original file contents match after decoding.')
+    log.error('FAILED: Original file contents differ after decoding.')
 
 
 sys.exit()
