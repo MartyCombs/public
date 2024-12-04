@@ -11,6 +11,8 @@ import argparse
 from mylog import MyLog
 from enc_conf import EncConf
 
+
+
 def parse_arguments():
     '''Parse arguments.
     '''
@@ -30,12 +32,13 @@ def parse_arguments():
     return parser.parse_args()
 
 
+
 def main():
     args = parse_arguments()
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
     log = l.log
     myconf = EncConf(debug=args.debug, loglevel=args.loglevel)
-    conf_file = myconf.create()
+    conf_file = myconf.build()
     if args.stdout == True:
         print(conf_file)
         return
@@ -53,3 +56,8 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
+
+
+#=============================================================================#
+# END
+#=============================================================================#
