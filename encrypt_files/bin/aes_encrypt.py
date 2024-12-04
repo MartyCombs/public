@@ -34,6 +34,15 @@ def parse_arguments():
 
 
 
+def check_file(filename):
+    encrypted_name = filename + '.enc'
+    if os.path.exists(encrypted_name):
+        raise Exception('Cannot encrypt!  Target file already exists "{}"'.format(
+            encrypted_name))
+    return
+
+
+
 def main():
     args = parse_arguments()
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
@@ -41,9 +50,16 @@ def main():
     aesgcm = AESCrypt(debug=args.debug,
                       loglevel=args.loglevel,
                       showprogress=args.showprogress)
+
+    # Confirm that a file of the same name as the encrypted one does not
+    # already exist within the same directory.
+    for file in args.files:
+        check_file(os.path.realpath(file))
+
     for file in args.files:
         aesgcm.set_filename(file)
         aesgcm.encrypt()
+
     return
 
 

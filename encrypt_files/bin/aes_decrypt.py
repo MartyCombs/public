@@ -34,6 +34,15 @@ def parse_arguments():
 
 
 
+def check_file(filename):
+    (decrypted_name, ext) = os.path.splitext(filename)
+    if os.path.exists(decrypted_name):
+        raise Exception('Cannot decrypt!  Target file already exists "{}"'.format(
+            decrypted_name))
+    return
+
+
+
 def main():
     args = parse_arguments()
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
@@ -41,6 +50,12 @@ def main():
     aesgcm = AESCrypt(debug=args.debug,
                       loglevel=args.loglevel,
                       showprogress=args.showprogress)
+
+    # Confirm that a file of the same name as the decrypted file does not
+    # already exist within the same directory.
+    for file in args.files:
+        check_file(os.path.realpath(file))
+
     for file in args.files:
         aesgcm.set_filename(file)
         aesgcm.decrypt()
