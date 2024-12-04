@@ -24,12 +24,18 @@ Encrypt files using the GPG command line using the key as specfied in the
 
     ${_config}
 
-OPTIONS
+This script is a wrapper around GPG and expects the user to have a GPG
+keyring which they manage separately.  The 'gpg' executible is also expected
+to be in the user execution path.
 
+
+OPTIONS
     --help         Print this usage and exit.
 
     --debug        Enable debug mode.
 
+The '--showprogress' and '--loglevel' are not implemented and will be 
+ignored with a warning message.
 
 EOF
     unset _prog _config
@@ -71,25 +77,30 @@ while [[ "X${1:0:1}" == "X-" ]]; do
             shift
             ;;
         *)
-            loggit ${PROG} WARNING "Unknown option \"$1\". Ignoring"
+            loggit ${PROG} WARNING "Option not implemented. Ignoring \"$1\"."
             shift
             ;;
     esac
 done
 DEBUG=${DEBUG:="False"}
+GPG_OPTS="--batch --armor --encrypt --recipient ${RECIPIENT}"
 
+# If --debug is requested, add some extra.
+if [[ "X${DEBUG}" == "XTrue" ]]; then
+    GPG_OPTS="${GPG_OPTS} --status-fd=2"
+fi
+
+# Cannot do anything if no files are passed.
 if [[ ${#} -eq 0 ]]; then
     loggit ${PROG} FATAL "No files passed."
     exit 1
 fi
 
 # Encrypt files.
-[[ "${DEBUG}" == "True" ]] && 
-  loggit ${PROG} DEBUG "Encrypting using GPG key for ${RECIPIENT}"
 for _file in $@; do
-    ${GPG} --batch --status-fd=2 --armor --encrypt --recipient ${RECIPIENT} ${_file}
-    [[ "${DEBUG}" == "True" ]] && 
-      loggit ${PROG} DEBUG "${_file} -> ${_file}.asc"
+    loggit ${PROG} INFO "Encrypting ${_file} to ${_file}.asc"
+    loggit ${PROG} DEBUG "Using recipient key ${RECIPIENT}"
+    ${GPG} ${GPG_OPTS} ${_file}
 done
 exit ${?}
 

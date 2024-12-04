@@ -20,11 +20,18 @@ Usage: ${_prog} [ OPTIONS ] FILE [FILE ...]
 
 Decrypt files using the GPG command line.
 
-OPTIONS
+This script is a wrapper around GPG and expects the user to have a GPG
+keyring which they manage separately.  The 'gpg' executible is also expected
+to be in the user execution path.
 
+
+OPTIONS
     --help         Print this usage and exit.
 
     --debug        Enable debug mode.
+
+The '--showprogress' and '--loglevel' are not implemented and will be
+ignored with a warning message.
 
 
 EOF
@@ -54,6 +61,7 @@ PROG="$(basename ${BASH_SOURCE[0]})"
 # GPG requirements.
 GPG="$(which gpg)"
 
+# Pull options beginning with '-'.
 while [[ "X${1:0:1}" == "X-" ]]; do
     case "${1}" in
         --help)
@@ -65,12 +73,24 @@ while [[ "X${1:0:1}" == "X-" ]]; do
             shift
             ;;
         *)
-            loggit ${PROG} WARNING "Unknown option \"$1\". Ignoring"
+            loggit ${PROG} WARNING "Option not implemented. Ignoring \"$1\"."
             shift
             ;;
     esac
 done
 DEBUG=${DEBUG:="False"}
+GPG_OPTS="--batch --decrypt"
+
+# If --debug is requested, add some extra.
+if [[ "X${DEBUG}" == "XTrue" ]]; then
+    GPG_OPTS="${GPG_OPTS} --status-fd=2"
+fi
+
+# Cannot do anything if no files are passed.
+if [[ ${#} -eq 0 ]]; then
+    loggit ${PROG} FATAL "No files passed."
+    exit 1
+fi
 
 # Check files for proper extension before decrypting.
 for _file in $@; do
@@ -83,8 +103,8 @@ done
 # Decrypt files
 for _file in $@; do
     OUTFILE="${_file%%.asc}"
-    ${GPG} --batch --status-fd=2 --decrypt ${_file} > ${OUTFILE}
-    [[ "${DEBUG}" == "True" ]] && loggit ${PROG} DEBUG "${_file} -> ${OUTFILE}"
+    loggit ${PROG} INFO "Decrypting ${_file} to ${OUTFILE}"
+    ${GPG} ${GPG_OPTS} ${_file} > ${OUTFILE}
 done
 exit ${?}
 
