@@ -20,6 +20,10 @@ from boto3.s3.transfer import TransferConfig
 
 
 class ProgressPercentage(object):
+    '''Class called by "Callback" parameter in the BOTO3 S3 client.  The tqdm
+    class is used to display a simple upload bar if the showprogress
+    parameter is True when calling the AWSS3.upload() method.
+    '''
     def __init__(self, filename):
         self._filename = os.path.basename(filename)
         self._size = float(os.path.getsize(filename))
@@ -34,8 +38,9 @@ class ProgressPercentage(object):
         return
 
     def __call__(self, bytes_amount):
-        # Update progress bar.
-        # Thread locking only needed with multipart upload.
+        ''' Update progress bar.  Thread locking only needed with
+        multipart upload.
+        '''
         with self._lock:
             self._seen_so_far += bytes_amount
             self._tqdm.update(bytes_amount)
@@ -56,18 +61,14 @@ class AWSS3(object):
     used for files larger than MP_THRESHOLD.
 
     ATTRIBUTES
-        debug          Debug mode.
+        debug              Debug mode.
 
-        loglevel       Log level.
-
-        client         S3 client.
-
-        resource       S3 resource.
+        loglevel           Log level.
 
     METHODS
-        get_client         Return the S3 client.
+        get_client         Return the BOTO3 S3 client.
 
-        get_resource       Return the S3 resource.
+        get_resource       Return the BOTO3 S3 resource.
 
         connect            Connect to S3 both client and resource.
 
@@ -110,25 +111,11 @@ class AWSS3(object):
 
 
     def get_resource(self):
-        '''Return the BOTO S3 client.  If one does not exist, connect first.
+        '''Return the BOTO S3 resource.  If one does not exist, connect first.
         '''
         if self.resource == None: self.connect()
         return self.resource
 
-
-
-    def _read_credentials(self):
-        '''Read S3 information from a simple KEY=VALUE formatted file.
-        '''
-        with open(self.DEF_CREDS_FILE, 'r') as f:
-            lines = f.readlines()
-        f.close()
-        credentials = {}
-        for line in lines:
-            if line[0] == '#': continue
-            key, value = line.strip().split('=')
-            credentials[key.strip()] = value.strip()
-        return credentials
 
 
     def connect(self):
@@ -152,6 +139,8 @@ class AWSS3(object):
                 region_name=creds['aws_region_name']
                 )
         finally:
+            # Clear out the information about the keys as soon as a
+            # connection to AWS is made.
             region = creds['aws_region_name']
             access_key = '...' + creds['aws_access_key_id'][-5:-1]
             secret_key = '...' + creds['aws_secret_access_key'][-5:-1]
@@ -162,6 +151,18 @@ class AWSS3(object):
         self.log.debug('Multipart uploads settings:\n{}'.format(self.cfg.print()))
         return
 
+    def _read_credentials(self):
+        '''Read S3 information from a simple KEY=VALUE formatted file.
+        '''
+        with open(self.DEF_CREDS_FILE, 'r') as f:
+            lines = f.readlines()
+        f.close()
+        credentials = {}
+        for line in lines:
+            if line[0] == '#': continue
+            key, value = line.strip().split('=')
+            credentials[key.strip()] = value.strip()
+        return credentials
 
 
 
@@ -185,6 +186,7 @@ class AWSS3(object):
 
     def prettyprint(self, num=None):
         '''Given bytes, return a value in KB/MB/GB/TB.
+        Only called if showprogress is False for the AWSS3.upload() method.
         '''
         KB = 1024
         MB = 1024 ** 2
@@ -207,17 +209,18 @@ class AWSS3(object):
 
     def upload(self, srcfile=None, bucket=None, key=None, showprogress=False):
         '''Upload a file to S3 through a single stream.  Show progress if requested
-        (i.e. showprogress=True)
-
-        If the file size is above the value defined in 'mp_threshold' in the
-        config file, use multipart upload with threading instead.
+        (i.e. showprogress=True) using the ProgressPercentage class.
         '''
+
+        # If file size is larger than 'mp_threshold' in the config, use
+        # multipart upload with threading instead.
         if os.path.getsize(srcfile) > self.cfg.mp_threshold:
             response = self._mp_upload(srcfile=srcfile,
                                        bucket=bucket,
                                        key=key,
                                        showprogress=showprogress)
             return response
+
         if self.client == None: self.connect()
         size_bytes = os.path.getsize(srcfile)
         s3_url = 's3://{}/{}'.format(bucket, key)
