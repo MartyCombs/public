@@ -56,102 +56,68 @@ def parse_arguments():
     return parser.parse_args()
 
 
-
-def precheck(files=None, log=None, args=None):
-    '''Examine the list of files passed and returns a list of full paths to
-    those files which pass the tests.
-    '''
-    clean_list = []
-    for f in files:
-        fullpath = os.path.realpath(f)
-        (full_sans_ext, ext) = os.path.splitext(fullpath)
-        basename = os.path.basename(fullpath)
-        # Skip '.meta' files passed.
-        if ext == '.meta':
-            log.debug('Skipping "{}"'.format(fullpath))
-            continue
-
-        # Unless we --force re-creation, skip any files which already
-        # have a '.meta' file.
-        metafile = fullpath + '.meta'
-        if os.path.exists(metafile) and not args.force:
-            log.warning('Metadata file already exists "{}"'.format(
-                metafile))
-            continue
-        clean_list.append(fullpath)
-    return clean_list
-
-
-
-def build_files(files=None, log=None, args=None, cfg=None):
-    '''Take a list of full paths and builds a set of metadata files for
-    each file passed.
-    '''
-    md_files = {}
-    for f in files:
-        log.debug('Building metadata for "{}"'.format(os.path.basename(f)))
-        md = MetaData(debug=args.debug, loglevel=args.loglevel,
-                      showprogress=args.showprogress)
-        md_fullpath = f + '.meta'
-        f_basename = os.path.basename(f)
-        md.set_filename(f)
-        md.set_backup_source(cfg.backup_source)
-        backup_time = time.strftime('%Y-%m-%d %H:%M:%S %z',
-                                    time.gmtime())
-        md.set_backup_date(backup_time)
-        md.set_encryption_key(cfg.encryption_key)
-        # Filenames are added to the beginning of the S3 URLs.
-        s3_url = '{}/{}'.format(cfg.s3_url, f_basename)
-        md.set_s3_url(s3_url)
-        s3_url_metadata = '{}/{}'.format(cfg.s3_url_metadata, md.md_filename)
-        md.set_s3_url_metadata(s3_url_metadata)
-        md.add_file_stats()
-        md_files[md_fullpath] = md.format()
-    return md_files
-
-
-
 def main():
-    '''Create metatdata files for files listed.  Some values within the metadata
-    files can be set with either a configuration file or by passing arguments
-    to this script.
-
-    Arguments passed take precedence over values in an optional configuration file.
-    '''
-
-    # Start with some default settings which can be pulled from a configuration
-    # file or overriddden with command options.
-    settings = {
-        'backup_source'        : 'personal',
-        'encryption_key'       : 'GPG',
-        's3_url'               : 's3://backup',
-        's3_url_metadata'      : 's3://backup'
-    }
-
     args = parse_arguments()
     l = MyLog(program=__name__, debug=args.debug, loglevel=args.loglevel)
     log = l.log
-    metadata_candidates = precheck(files=args.files, log=log, args=args)
+
+    # Sort through the list of files passed.  We have some restrictions
+    # regarding what we will or will not do.
+    clean_list = []
+    for file in args.files:
+        fullpath = os.path.realpath(file)
+        (base, ext) = os.path.splitext(fullpath)
+        if ext == '.meta':
+            raise Exception('''
+                Will not create a metadata file from another metadata file.
+                That is too meta for me.
+            ''')
+        if os.path.exists(fullpath + '.meta') and not args.force:
+            raise Exception('''
+            Metadata file already exists.
+            {}
+            Use --force to overwrite
+            '''.format((fullpath + '.meta')))
+        clean_list.append(fullpath)
+
 
     # Read settings from the configuration file and override any passed as
     # arguments.
     cfg = MetadataConf(debug=args.debug, loglevel=args.loglevel)
     cfg.read()
-    if args.backup_source:  cfg.set_backup_source(args.backup_source)
-    if args.encryption_key: cfg.set_encryption_key(args.encryption_key)
-    if args.s3_url: cfg.set_s3_url(args.s3_url)
+
+    # Pass arguments through the config file to perform any necessary checks.
+    if args.backup_source:   cfg.set_backup_source(args.backup_source)
+    if args.encryption_key:  cfg.set_encryption_key(args.encryption_key)
+    if args.s3_url:          cfg.set_s3_url(args.s3_url)
     if args.s3_url_metadata: cfg.set_s3_url_metadata(args.s3_url_metadata)
-    metadata_files = build_files(files=metadata_candidates, log=log, args=args,
-                                 cfg=cfg)
-    for metafile in metadata_files.keys():
-        log.info('Writing "{}"'.format(metafile))
-        with open(metafile, 'w') as fw:
-            fw.write(metadata_files[metafile])
-            log.debug('Contents\n{}\n{}\n{}'.format(
-                '='*76,
-                metadata_files[metafile],
-                '='*76))
-        fw.close()
+
+    # Build a dictionary of MetaData() class instances for each file.
+    md_files = {}
+    for file in clean_list:
+        md = MetaData(debug=args.debug,
+                      loglevel=args.loglevel,
+                      showprogress=args.showprogress,
+                      filename=file)
+        md.set_backup_source(cfg.backup_source)
+        backup_time = time.strftime('%Y-%m-%d %H:%M:%S %z', time.gmtime())
+        md.set_backup_date(backup_time)
+        md.set_encryption_key(cfg.encryption_key)
+        full_s3_url = cfg.s3_url + '/' + os.path.basename(md.filename)
+        md.set_s3_url(full_s3_url)
+        full_md_s3_url = cfg.s3_url_metadata + (
+            '/' + os.path.basename(md.metadata_filename))
+        md.set_s3_url_metadata(full_md_s3_url)
+        md.add_file_stats()
+        md_files[file] = md
+
+    # Write each of the metadta files.
+    for file in md_files.keys():
+        log.info('Writing metadata file for "{}"'.format(os.path.basename(file)))
+        md_files[file].write()
+        log.debug('Contents\n{}\n{}\n{}'.format('='*76,
+                                                md_files[file].format(),
+                                                '='*76))
     return
 
 
