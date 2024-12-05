@@ -23,7 +23,7 @@ def checksum(filename=None):
 
 l = MyLog(debug=True)
 log = l.log
-log.debug('Testing encryption class aes_crypt.AESCrypt')
+log.debug('\n\nTesting encryption class aes_crypt.AESCrypt\n')
 
 testfile1 = 'testfile.mp4'
 testfile2 = 'testfile-copy.mp4'
