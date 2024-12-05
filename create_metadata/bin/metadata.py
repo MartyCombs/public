@@ -7,7 +7,6 @@
 
 import sys
 import os
-import re
 import time
 import datetime
 import hashlib
@@ -19,14 +18,21 @@ class MetaData(object):
     '''Manages the metadata structure of files backed up to S3.
 
     ATTRIBUTES
-        debug             : Enable debug mode.
-        loglevel          : Log level.
-        showprogress      : Enable progress bar.
-        filename          : Basename of the file.
-        fullpath          : Full path to the file.
-        md_filename       : Basename of the metadata file.
-        md_filecontents   : JSON formatted contents of the metadata file.
-        stats             : Data structure for metadata file. (See below.)
+        debug                    Enable debug mode.
+
+        loglevel                 Set the python log level.
+
+        showprogress             Show progress via tqdm.
+
+        filename                 File name.
+
+        metadata_filename        Metadata file name.
+
+        metadata_filecontents    JSON formatted contents of the metatdata file.
+                                 after loading a metadata file or after setting
+                                 all metadata file attributes and running the
+                                 format() method.
+
 
     DATA STRUCTURE
         This will become the contents of 'FILENAME.meta'
@@ -42,33 +48,46 @@ class MetaData(object):
             's3_url_metadata'      : S3 URL to metadata file.
         }
 
+
     METHODS
-        set_filename               : Set the file name.
-        set_backup_source          : Set backup source.
-        set_backup_date            : Set date for backup.
-        add_file_stats             : Add file size and checksum.
-        set_encryption_key         : Set the value for encryption key used.
-        set_s3_url                 : Set S3 URL for backup file.
-        set_s3_url_metadata        : Set S3 URL for metadata file.
-        format                     : Return JSON formatted contents of
-                                     metadata file
-        load                       : Load metadata file.
+        set_filename             Set the file name.
+
+        set_backup_source        Set backup source.
+
+        set_backup_date          Set date for backup.
+
+        add_file_stats           Add file information such as 'file_size_bytes',
+                                 'file_checksum_method', and 'file_checksum'.
+
+        set_encryption_key       Set the encryption key used.
+
+        set_s3_url               Set S3 URL for the file.
+
+        set_s3_url_metadata      Set S3 URL for the metadata file.
+                                 (This file.)
+
+        format                   Return JSON formatted contents of metadata file.
+
+        load                     Load metadata file.
 
     '''
 
-    MDINIT = {
-        'backup_source' : 'personal',   # Backup source note
+    DEFAULT_SETTINGS = {
+        'backup_source' : None      ,   # Backup source note
         'backup_date' : None,           # 'Y-M-D H:M:S TZ'
         'file_size_bytes' : None,       # File size in bytes
         'file_checksum' : None,         # Checksum of backup file
         'file_checksum_method' : None,  # Checksum method (SHA256, MD5, etc)
-        'encryption_key' : 'GPG key',   # Encryption key used on the file.
+        'encryption_key' : None,        # Encryption key used on the file.
         's3_url' : None,                # S3 URL of file
         's3_url_metadata' : None        # S3 URL of metadata file
     }
 
 
-    def __init__(self, debug=None, loglevel='INFO', showprogress=False,
+    def __init__(self,
+                 debug=None,
+                 loglevel='INFO',
+                 showprogress=False,
                  filename=None):
         self.debug = debug
         self.loglevel = loglevel
@@ -76,13 +95,22 @@ class MetaData(object):
         l = MyLog(program=program, debug=debug, loglevel=loglevel)
         self.log = l.log
         self.showprogress = showprogress
-        self.filename = None
-        self.fullpath = None
-        self.md_filename = None
-        self.stats = self.MDINIT
-        self.md_filecontents = None
 
-        if filename: self.set_filename(filename)
+        if filename != None:
+            self.set_filename(filename)
+        else:
+            self.filename = None
+            self.metadata_filename = None
+            self.fullpath = None
+        self.backup_source = self.DEFAULT_SETTINGS['backup_source']
+        self.backup_date = self.DEFAULT_SETTINGS['backup_date']
+        self.file_size_bytes = self.DEFAULT_SETTINGS['file_size_bytes']
+        self.file_checksum = self.DEFAULT_SETTINGS['file_checksum']
+        self.file_checksum_method = self.DEFAULT_SETTINGS['file_checksum_method']
+        self.encryption_key = self.DEFAULT_SETTINGS['encryption_key']
+        self.s3_url = self.DEFAULT_SETTINGS['s3_url']
+        self.s3_url_metadata = self.DEFAULT_SETTINGS['s3_url_metadata']
+        self.metadata_filecontents = None
         return
 
 
@@ -90,12 +118,10 @@ class MetaData(object):
     def set_filename(self, path=None):
         '''Given a path, set attributes filename, fullpath, md_filename.
         '''
-        if not os.path.exists(path): raise Exception('File does not exist')
-        if not os.path.isfile(path): raise Exception('Not a file')
-        if not os.access(path, os.R_OK): raise Exception('File not readable')
+        if path == None: return
         self.filename = os.path.basename(path)
         self.fullpath = os.path.realpath(path)
-        self.md_filename = self.filename + '.meta'
+        self.metadata_filename = self.filename + '.meta'
         return
 
 
@@ -104,10 +130,8 @@ class MetaData(object):
         '''Set the backup source for the filename.
         '''
         self.log.debug('Setting "backup_source" to "{}"'.format(backup_source))
-        self.stats['backup_source'] = backup_source
+        self.backup_source = backup_source
         return
-    def get_backup_source(self):
-        return self.stats['backup_source']
 
 
 
@@ -118,10 +142,8 @@ class MetaData(object):
             self.log.error('Backup date not set')
             return
         self.log.debug('Setting "backup_date" to "{}"'.format(backup_date))
-        self.stats['backup_date'] = backup_date
+        self.backup_date = backup_date
         return
-    def get_backup_date(self):
-        return self.stats['backup_date']
 
 
 
@@ -132,15 +154,13 @@ class MetaData(object):
             file_checksum
             file_checksum_method
         '''
+        if not os.path.isfile(self.filename):
+            raise Exception('File does not exist "{}"'.format(self.filename))
         self.log.debug('Adding file stats')
-        self.stats['file_size_bytes'] = os.path.getsize(self.fullpath)
-        self.stats['file_checksum_method'] = 'sha512'
+        self.file_size_bytes = os.path.getsize(self.fullpath)
+        self.file_checksum_method = 'sha512'
         self._calculate_checksum()
         return
-    def get_file_size_bytes(self):
-        return self.stats['file_size_bytes']
-    def get_file_checksum_method(self):
-        return self.stats['file_checksum_method']
 
 
 
@@ -165,10 +185,8 @@ class MetaData(object):
                 hasher.update(buff)
                 if self.showprogress == True: progress_bar.update(len(buff))
         if self.showprogress == True: progress_bar.close()
-        self.stats['file_checksum'] = '{}'.format(hasher.hexdigest())
+        self.file_checksum = '{}'.format(hasher.hexdigest())
         return
-    def get_file_checksum(self):
-        return self.stats['file_checksum']
 
 
 
@@ -176,61 +194,97 @@ class MetaData(object):
         '''Set the value of the encryption key used on the file.
         '''
         self.log.debug('Setting "encryption_key" to "{}"'.format(key_used))
-        self.stats['encryption_key'] = key_used
+        self.encryption_key = key_used
         return
-    def get_encryption_key(self):
-        return self.stats['encryption_key']
 
 
 
-    def set_s3_url(self, s3_url=None):
+    def set_s3_url(self, url=None):
         '''Set the S3 URL for the file.
         '''
-        self.log.debug('Setting "s3_url" to "{}"'.format(s3_url))
-        self.stats['s3_url'] = s3_url
+        self.log.debug('Setting "s3_url" to "{}"'.format(url))
+        self.s3_url = url
         return
-    def get_s3_url(self):
-        return self.stats['s3_url']
 
 
 
-    def set_s3_url_metadata(self, s3_url_metadata=None):
+    def set_s3_url_metadata(self, url=None):
         '''Set the S3 URL for the metadata file.
         '''
-        self.log.debug('Setting "s3_url_metadata" to "{}"'.format(s3_url_metadata))
-        self.stats['s3_url_metadata'] = s3_url_metadata
+        self.log.debug('Setting "s3_url_metadata" to "{}"'.format(url))
+        self.s3_url_metadata = url
         return
-    def get_s3_url_metadata(self):
-        return self.stats['s3_url_metadata']
 
 
 
     def format(self):
         '''Return JSON format of the metadata file.
         '''
-        self.md_filecontents = {}
-        self.md_filecontents[self.filename] = self.stats
-        return(json.dumps(self.md_filecontents, indent=4, sort_keys=True))
+        if self.filename == None: raise Exception('Filename not set')
+
+        # Build the JSON file from the nested python dictionary.
+        self.metadata_filecontents = {}
+
+        stats = self.DEFAULT_SETTINGS
+        stats['backup_source'] = self.backup_source
+        stats['backup_date'] = self.backup_date
+        stats['file_size_bytes'] = self.file_size_bytes
+        stats['file_checksum'] = self.file_checksum
+        stats['file_checksum_method'] = self.file_checksum_method
+        stats['encryption_key'] = self.encryption_key
+        stats['s3_url'] = self.s3_url
+        stats['s3_url_metadata'] = self.s3_url_metadata
+
+        self.metadata_filecontents[self.filename] = stats
+        json_file_contents = json.dumps(self.metadata_filecontents,
+                                        indent=4,
+                                        sort_keys=True)
+        return json_file_contents
+
+
+
+    def write(self):
+        full_md_filename = os.path.dirname(self.fullpath) + os.sep + (
+            os.path.basename(self.metadata_filename))
+        self.log.debug('Writing "{}"'.format(self.metadata_filename))
+        with open(full_md_filename, 'w') as f:
+            f.write(self.format())
+        f.close()
+        return
 
 
 
     def load(self, path=None):
-        '''Load data from the referenced stats file.
+        '''Load data from the referenced metadata file.  File format should match
+        the DATA STRUCTURE in the class comments above.
 
         NOTE: The attribute fullpath is not set as only the basename for the
               original file sent to S3 is stored in the metadata file.
         '''
-        if not os.path.exists(path): raise Exception('File does not exist')
-        if not os.path.isfile(path): raise Exception('No a file.')
-        if not os.access(path, os.R_OK): raise Exception('File not readable')
         with open(os.path.realpath(path), 'r') as f:
-            self.metadata_file = json.load(f)
+            md_contents = json.load(f)
         f.close()
-        self.md_filename = os.path.basename(path)
-        for k in self.metadata_file.keys():
-            self.filename = str(k)
-            for k2 in self.metadata_file[k].keys():
-                self.stats[k2] = self.metadata_file[k][k2]
+        self.metadata_filename = os.path.basename(path)
+        # Top level key is the filename.
+        for k1 in md_contents.keys():
+            self.set_filename(str(k1))
+            for k2 in md_contents[k1].keys():
+                if k2 == 'backup_source':
+                    self.set_backup_source(md_contents[k1][k2])
+                elif k2 == 'backup_date':
+                    self.set_backup_date(md_contents[k1][k2])
+                elif k2 == 'file_size_bytes':
+                    self.file_size_bytes = int(md_contents[k1][k2])
+                elif k2 == 'file_checksum':
+                    self.file_checksum = md_contents[k1][k2]
+                elif k2 == 'file_checksum_method':
+                    self.file_checksum_method = md_contents[k1][k2]
+                elif k2 == 'encryption_key':
+                    self.set_encryption_key(md_contents[k1][k2])
+                elif k2 == 's3_url':
+                    self.set_s3_url(md_contents[k1][k2])
+                elif k2 == 's3_url_metadata':
+                    self.set_s3_url_metadata(md_contents[k1][k2])
         return
 
 
