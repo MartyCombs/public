@@ -10,39 +10,42 @@ import os
 from metadata import MetaData
 from mylog import MyLog
 
-filename = os.path.realpath(sys.argv[1])
 l = MyLog(debug=True)
 log = l.log
-log.debug('Testing MetaData class')
+log.debug('\n\nTesting metadata.MetaData()\n')
+
+testfile = 'testfile.txt'
+testfile2 = 'testfile-2.txt.meta'
+
 m = MetaData(debug=True)
-m.set_filename(filename)
-m.set_backup_date('2024-09-30 17:11:29 -0600')
+m.set_filename(testfile)
+m.set_backup_date('1999-12-31 23:59:59 -0000')
 m.set_backup_source('work')
 m.add_file_stats()
-m.set_s3_url('s3://some-bucket/some/path')
-m.set_s3_url_metadata('s3://some-bucket/some/other/path')
+m.set_s3_url('s3://mybucket/key1')
+m.set_s3_url_metadata('s3://my-other-bucket/key2')
+
+# Print contents of the metadata file.
 filecontents = m.format()
-div = '='*76
-log.debug('File contents will be:\n{}\n{}\n{}'.format(div, filecontents, div))
-log.debug('Metadata file name should be {}'.format(filename))
-log.debug('Writing "{}"'.format(m.md_filename))
-with open(m.md_filename, 'w') as f:
-    f.write(filecontents)
-f.close()
+if m.metadata_filename != 'testfile.txt.meta':
+    log.debug('''\nFAILED: Metadata file not what is expected.
+        {} != {}\n'''.format( m.metadata_filename, 'testfile.txt.meta'))
+else:
+    log.debug('\nPASSED: Correct anticipated name for metatdata file\n')
+m.write()
 
-log.debug('Reading "{}.meta"'.format(filename))
+log.debug('Reading "{}"'.format(testfile2))
 m2 = MetaData(debug=True)
-metafile = filename + '.meta'
-m2.load(metafile)
-filecontents2 = m2.format()
+m2.load(testfile2)
+checksum = 'bf9bac8036ea00445c04e3630148fdec15aa91e20b753349d9771f4e25a4f68c82f9bd52f0a72ceaff5415a673dfebc91f365f8114009386c001f0d56c7015de'
+if m2.file_checksum != checksum:
+    log.debug('''\nFAILED: Checksum for {} does not match expected value
+    {}
+    '''.format(testfile2, checksum))
+else:
+    log.debug(
+    '\nPASSED: Checksum for {} matches expected value.\n'.format(testfile2))
 
-if filecontents != filecontents2:
-    log.error('MetaData class FAILED!')
-    log.error('Original file contents:\n{}\n{}\n{}\n'.format('='*76, filecontents, '='*76))
-    log.error('Loaded file contents:\n{}\n{}\n{}\n'.format('='*76, filecontents2, '='*76))
-    raise Exception('Test failed!')
-
-log.info('MetaData class PASSED')
 sys.exit()
 
 
