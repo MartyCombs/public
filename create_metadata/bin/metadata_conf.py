@@ -16,30 +16,26 @@ class MetadataConf(object):
     '''Manage metadata configuration file.
 
     ATTRIBUTES
-        backup_source          A text label for the backup such as
-                               'personal', 'work', 'photos', etc.
+        debug                   Enable debug mode.
 
-        encryption_key         Key used to encrypt the backup.
-
-        s3_url                 S3 URL where to store the backup.
-
-        s3_url_metadata        S3 URL for the metadata file.
+        loglevel                Set the python log level.
 
     METHODS
-        read()                 Read the configuration file.
+        read                   Read the configuration file.
 
-        set_backup_source()    Set the backup source.
+        set_backup_source      A text label for the backup such as
+                               'personal', 'work', 'photos', etc.
 
-        set_encryption_key()   Set the encryption key.
+        set_encryption_key     Key used to encrypt the backup.
 
-        set_s3_url()           Set the S3 URL for the file.
+        set_s3_url             S3 URL where to store the backup.
 
-        set_s3_url_metadata()  Set the S3 URL for the metadata file.
+        set_s3_url_metadata    S3 URL for the metadata file.
 
-        print()                Print the values of the configuration for
+        print                  Print the values of the configuration for
                                debug logging.
 
-        build()                Return full contents of the configuration file
+        build                  Return full contents of the configuration file
                                for writing.
 
     '''
@@ -101,12 +97,10 @@ class MetadataConf(object):
         return
 
 
-
     def set_encryption_key(self, enckey=None):
         if enckey == None: return
         self.encryption_key = enckey
         return
-
 
 
     def set_s3_url(self, url=None):
@@ -117,14 +111,12 @@ class MetadataConf(object):
         return
 
 
-
     def set_s3_url_metadata(self, url=None):
         if url == None: return
         if not re.match(self.S3_URL, url):
             raise Exception('Unrecognized S3 url')
         self.s3_url_metadata = url
         return
-
 
 
     def print(self):
@@ -148,14 +140,12 @@ class MetadataConf(object):
         cfg += '{}'.format(self._conf_header())
         cfg += '\n'
         cfg += '[DEFAULT]\n'
-        for key in self.DEF_CONFIG.keys():
-            cfg += '{} = {}\n'.format(key, self.DEF_CONFIG[key])
-        cfg += '{}\n# END\n{}\n'.format(div, div)
+        cfg += 'backup_source = {}\n'.format(self.backup_source)
+        cfg += 'encryption_key = {}\n'.format(self.encryption_key)
+        cfg += 's3_url = {}\n'.format(self.s3_url)
+        cfg += 's3_url_metadata = {}\n'.format(self.s3_url_metadata)
+        cfg += '\n{}\n# END\n{}\n'.format(div, div)
         return cfg
-        with open(self.filename, 'w') as c:
-            c.write(cfg)
-        self.log.info('Created config "{}"'.format(self.DEF_CONFIG_FILE))
-        return
 
 
 
