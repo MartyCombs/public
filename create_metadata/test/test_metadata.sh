@@ -32,38 +32,41 @@ else
 fi
 
 
-echo >&2 "Testing 'create_mdconfig.sh --stdout'"
-${TOP_DIR}/bin/create_mdconfig.sh --stdout
+echo >&2 "Testing create_mdconfig.py"
+${TOP_DIR}/bin/create_mdconfig.py --stdout > config.cfg
+S3_URL="$(grep ^s3_url_metadata config.cfg | awk '{print $3}')"
+if [[ "X${S3_URL}" == "Xs3://BUCKET_NAME/PATH" ]]; then
+    echo >&2 "PASSED: Test of create_mdconfig.py"
+else
+    echo >&2 "FAILED: Test of create_mdconfig.py"
+    exit 1
+fi
+command rm config.cfg
 
 TEST_DIR="${TOP_DIR}/test"
-TEST_FILE="testfile.txt"
-cat >${TEST_DIR}/${TEST_FILE} <<EOF
-This is a test file.
-EOF
 
-echo >&2 "Testing MetaData class."
-source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test_metadata.py ${TEST_FILE}
+echo >&2 "Testing metadata.MetaData() class."
+source ${TOP_DIR}/ve3/bin/activate && ${TEST_DIR}/test_metadata.py
 
-echo >&2 "Testing 'create_metadata.sh'"
-${TOP_DIR}/bin/create_metadata.sh --backup_source="personal" \
+echo >&2 "Testing create_metadata.sh"
+${TOP_DIR}/bin/create_metadata.sh --backup_source="work" \
     --encryption_key="a different key" \
     --s3_url="s3://mybucket/path" \
     --s3_url_metadata="s3://anotherbucket/differentpath" \
     --force \
     --debug \
-    ${TEST_DIR}/${TEST_FILE}
-echo >&2 "Contents of ${TEST_FILE}.meta"
-echo >&2 "============================================================================"
-cat ${TEST_DIR}/${TEST_FILE}.meta
-echo >&2 "============================================================================"
+    ${TEST_DIR}/testfile.txt
+BACKUP_SOURCE="$(grep backup_source testfile.txt.meta | awk '{print $2}' | sed -e 's/"//g; s/,//g')"
 
-cat >&2 <<EOF
+if [[ "X${BACKUP_SOURCE}" == "Xwork" ]]; then
+    echo >&2 "PASSED: Test of create_metadata.sh"
+else
+    echo >&2 "FAILED: Test of create_metadata.sh"
+    exit 1
+fi
+command rm testfile.txt.meta
 
-Removing:
-    ${TEST_DIR}/${TEST_FILE}.meta
-    ${TEST_DIR}/${TEST_FILE}
-EOF
-command rm ${TEST_DIR}/${TEST_FILE}.meta ${TEST_DIR}/${TEST_FILE}
+
 exit ${?}
 
 
