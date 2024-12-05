@@ -13,7 +13,7 @@ warning message.  For example, scripts around GPG ignore options
 The `--help` option is available for all sub-scripts.
 
 
-# Encryption / Decryption Workflow
+# Encryption / Decryption workflow
 ## AES-GCM
 For AES-GCM encryption, a master key is read from a file, a salt and nonce 
 are generated, and the file is read in chunks, encrypted, and written back 
@@ -74,7 +74,7 @@ with AES-GCM.  The script passes all options to lower level scripts.
 * `gpg_decrypt.sh` - Wrapper for `gpg` to decrypt files.
 
 
-## Helper Scripts
+## Helper scripts
 * `enc_conf.py` - Class used to read the configuration file and pass values
 on to python scripts.
 * `create_conf.py` - Creates the config file with default settings.
