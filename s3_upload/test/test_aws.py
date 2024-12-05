@@ -39,8 +39,8 @@ def test_metadata_file_parsing(log):
     log.debug('\n{}\nTesting parsing of metadata file.'.format('='*76))
     md = MetaData(debug=True)
     md.load(testfile)
-    if (md.get_filename() != 'testfile.txt') or (
-        md.get_s3_url() != 's3://BUCKET_NAME/PATH/testfile.txt'):
+    if (md.filename != 'testfile.txt') or (
+        md.s3_url != 's3://BUCKET_NAME/PATH/testfile.txt'):
         raise Exception('Testing metadata class metadata.py FAIlED!')
     log.debug('PASSED')
     return
