@@ -7,7 +7,7 @@
 
 import sys
 import os
-from s3backup_conf import S3BackupConf
+from s3_backup_conf import S3BackupConf
 
 TOP_DIR = str(os.sep).join(os.path.realpath(__file__).split(os.sep)[:-2])
 def main():

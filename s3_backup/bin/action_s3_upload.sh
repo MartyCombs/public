@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #=============================================================================#
-# Project Docs : 
+# Project Docs :
 # Ticket       :
-# Source Ctl   : 
+# Source Ctl   :
 #=============================================================================#
 
 set -euf -o pipefail
@@ -23,10 +23,19 @@ if [[ ! -d "${TOP_DIR}/ve3" ]]; then
     unset OPTS
     popd 1>/dev/null 2>/dev/null
 fi
-if [[ ${#} -lt 1 ]]; then
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_s3backupconfig.py
+
+# Prepare path to import python modules from create_metadata
+if [[ -z ${PYTHONPATH+x} ]]; then
+    export PYTHONPATH="${TOP_DIR}/create_metadata/bin"
 else
-    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/create_s3backupconfig.py ${*}
+    export PYTHONPATH="${PYTHONPATH}:${TOP_DIR}/create_metadata/bin"
+fi
+
+if [[ ${#} -lt 1 ]]; then
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/action_s3_upload.py --help
+    exit 1
+else
+    source ${TOP_DIR}/ve3/bin/activate && ${TOP_DIR}/bin/action_s3_upload.py "$@"
 fi
 exit ${?}
 
@@ -35,3 +44,4 @@ exit ${?}
 #=============================================================================#
 # END
 #=============================================================================#
+

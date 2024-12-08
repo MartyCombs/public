@@ -5,9 +5,7 @@
 # Source Ctl   :
 #=============================================================================#
 
-import sys
 import os
-import re
 import configparser
 from mylog import MyLog
 
@@ -16,41 +14,50 @@ class S3BackupConf(object):
     '''Manage S3 backup configuration file.
 
     ATTRIBUTES
-        metadata_destination    : Local destination for the metadata files.
+        metadata_destination    Local destination for the metadata files.
 
-        manifest_destination    : Local destination for the manifest files
-                                  which list the contents of tar archives.
-                                  Archives are assumed to be compressed with
-                                  .tar.gz extension.
+        manifest_destination    Local destination for the manifest files
+                                which list the contents of tar archives.
+                                Archives are assumed to be compressed with
+                                .tar.gz extension.
 
-        drop_dir                : Directory where files to be archived are
-                                  dropped.
+        drop_dir                Directory where files to be archived are
+                                dropped.
 
-        drop_script             : Script to move files from drop directory to
-                                  begin the process.
+        drop_script             Script to move files from drop directory to
+                                begin the process.
 
-        manifest_dir            : Directory where manifest files for archives
-                                  are created.
+        manifest_dir            Directory where manifest files for archives
+                                are created.
 
-        manifest_script         : Script used to create the archive manifests.
+        manifest_script         Script used to create the archive manifests.
 
-        encrypt_dir             : Directory where files are encrypted.
+        encrypt_dir             Directory where files are encrypted.
 
-        encrypt_script          : Script used to encrypt files.
+        encrypt_script          Script used to encrypt files.
 
-        metadata_dir            : Directory where metadata files are created.
+        metadata_dir            Directory where metadata files are created.
 
-        metadata_script         : Script used to create metadata files.
+        metadata_script         Script used to create metadata files.
 
-        s3upload_dir            : Directory where files for upload to S3 are
-                                  placed.
+        s3_upload_dir           Directory where files for upload to S3 are
+                                placed.
 
-        upload_script           : Script used to upload files to S3.
+        upload_script           Script used to upload files to S3.
 
+
+    METHODS
+        read                    Read the configuration file.
+
+        print                   Print the configuration of parameters for
+                                nice logging.
+
+        build                   Build and return the configuration file for
+                                writing.
     '''
 
     TOP_DIR = str(os.sep).join(os.path.realpath(__file__).split(os.sep)[:-2])
-    DEF_CONFIG_FILE = TOP_DIR + os.sep + 'etc' + os.sep + 's3backup.cfg'
+    DEF_CONFIG_FILE = TOP_DIR + os.sep + 'etc' + os.sep + 's3_backup.cfg'
     DEF_CONFIG = {
         'metadata_destination'     : 'meta',
         'manifest_destination'     : 'manifest',
@@ -67,8 +74,8 @@ class S3BackupConf(object):
         'metadata_dir'             : 'work/40-create_metadata',
         'metadata_script'          : 'bin/action_metadata.py',
 
-        's3upload_dir'             : 'work/50-s3_upload',
-        'upload_script'            : 'bin/action_s3upload.sh'
+        's3_upload_dir'            : 'work/50-s3_upload',
+        'upload_script'            : 'bin/action_s3_upload.sh'
     }
 
 
@@ -93,7 +100,7 @@ class S3BackupConf(object):
         self.encrypt_script = self.DEF_CONFIG['encrypt_script']
         self.metadata_dir = self.DEF_CONFIG['metadata_dir']
         self.metadata_script = self.DEF_CONFIG['metadata_script']
-        self.s3upload_dir = self.DEF_CONFIG['s3upload_dir']
+        self.s3_upload_dir = self.DEF_CONFIG['s3_upload_dir']
         self.upload_script = self.DEF_CONFIG['upload_script']
         return
 
@@ -130,8 +137,8 @@ class S3BackupConf(object):
         self.metadata_script = self._add_path(cfg.get(
             'DEFAULT', 'metadata_script'))
 
-        self.s3upload_dir = self._add_path(cfg.get(
-            'DEFAULT', 's3upload_dir'))
+        self.s3_upload_dir = self._add_path(cfg.get(
+            'DEFAULT', 's3_upload_dir'))
         self.upload_script = self._add_path(cfg.get(
             'DEFAULT', 'upload_script'))
         return
@@ -153,6 +160,8 @@ class S3BackupConf(object):
 
 
     def print(self):
+        '''Report on the details read from the configuration file.
+        '''
         report = '{}\n'.format('='*76)
         report += '{:<25} {}\n'.format('metadata_destination',
                                        self.metadata_destination)
@@ -178,8 +187,8 @@ class S3BackupConf(object):
         report += '{:<25} {}\n'.format('metadata_script',
                                        self.metadata_script)
 
-        report += '{:<25} {}\n'.format('s3upload_dir',
-                                       self.s3upload_dir)
+        report += '{:<25} {}\n'.format('s3_upload_dir',
+                                       self.s3_upload_dir)
         report += '{:<25} {}\n'.format('upload_script',
                                        self.upload_script)
 
@@ -188,7 +197,7 @@ class S3BackupConf(object):
 
 
 
-    def create(self):
+    def build(self):
         '''Create the config file with all default values.
         '''
         div = '#{}#'.format('='*76)
@@ -198,15 +207,20 @@ class S3BackupConf(object):
         cfg += '{}'.format(self._conf_header())
         cfg += '\n'
         cfg += '[DEFAULT]\n'
-        for key in self.DEF_CONFIG.keys():
-            cfg += '{} = {}\n'.format(key, self.DEF_CONFIG[key])
-        cfg += '\n\n\n'
-        cfg += '{}\n# END\n{}\n'.format(div, div)
+        cfg += 'metadata_destination = {}\n'.format(self.metadata_destination)
+        cfg += 'manifest_destination = {}\n'.format(self.manifest_destination)
+        cfg += 'drop_dir = {}\n'.format(self.drop_dir)
+        cfg += 'drop_script = {}\n'.format(self.drop_script)
+        cfg += 'manifest_dir = {}\n'.format(self.manifest_dir)
+        cfg += 'manifest_script = {}\n'.format(self.manifest_script)
+        cfg += 'encrypt_dir = {}\n'.format(self.encrypt_dir)
+        cfg += 'encrypt_script = {}\n'.format(self.encrypt_script)
+        cfg += 'metadata_dir = {}\n'.format(self.metadata_dir)
+        cfg += 'metadata_script = {}\n'.format(self.metadata_script)
+        cfg += 's3_upload_dir = {}\n'.format(self.s3_upload_dir)
+        cfg += 'upload_script = {}\n'.format(self.upload_script)
+        cfg += '\n{}\n# END\n{}\n'.format(div, div)
         return cfg
-        with open(self.filename, 'w') as c:
-            c.write(cfg)
-        self.log.info('Created config "{}"'.format(self.DEF_CONFIG_FILE))
-        return
 
 
 
@@ -296,7 +310,7 @@ class S3BackupConf(object):
 #                              [DEFAULT: {}]
 #       '''.format(self.DEF_CONFIG['metadata_script'])
         header += '''
-# s3upload_dir                 Files and archives located here will be uploaded
+# s3_upload_dir                Files and archives located here will be uploaded
 #                              to the S3 bucket listed in the metadata file for
 #                              that file or archive.
 #
@@ -312,7 +326,7 @@ class S3BackupConf(object):
 #                                defined in the 'metadata_destination' config
 #                                variable.
 #                              [DEFAULT: {}]
-#       '''.format(self.DEF_CONFIG['s3upload_dir'])
+#       '''.format(self.DEF_CONFIG['s3_upload_dir'])
         header += '''
 # upload_script                Script used to upload files to S3.
 #                              [DEFAULT: {}]

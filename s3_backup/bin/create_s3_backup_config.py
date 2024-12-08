@@ -9,7 +9,7 @@ import sys
 import os
 import argparse
 from mylog import MyLog
-from s3backup_conf import S3BackupConf
+from s3_backup_conf import S3BackupConf
 
 def parse_arguments():
     '''Parse arguments.
@@ -33,7 +33,7 @@ def main():
     l = MyLog(debug=args.debug, loglevel=args.loglevel)
     log = l.log
     myconf = S3BackupConf(debug=args.debug, loglevel=args.loglevel)
-    conf_file = myconf.create()
+    conf_file = myconf.build()
     if os.path.isfile(myconf.filename) and not args.force:
         raise Exception('''
             Config exists.  "{}"

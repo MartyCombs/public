@@ -11,7 +11,7 @@ import argparse
 import re
 import subprocess
 from mylog import MyLog
-from s3backup_conf import S3BackupConf
+from s3_backup_conf import S3BackupConf
 
 
 
