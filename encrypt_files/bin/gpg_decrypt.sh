@@ -112,7 +112,8 @@ done
 # Decrypt files
 for _file in $@; do
     OUTFILE="${_file%%.asc}"
-    loggit ${PROG} INFO "Decrypting ${_file} to ${OUTFILE}"
+    _filesize="$(${TOP_DIR}/bin/prettyprint.py ${_file})"
+    loggit ${PROG} INFO "Decrypting ${_file} (${_filesize}) to ${OUTFILE}"
     ${GPG} ${GPG_OPTS} ${_file} > ${OUTFILE}
 done
 exit ${?}

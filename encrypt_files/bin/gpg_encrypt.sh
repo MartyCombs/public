@@ -106,7 +106,8 @@ done
 
 # Encrypt files.
 for _file in $@; do
-    loggit ${PROG} INFO "Encrypting ${_file} to ${_file}.asc"
+    _filesize="$(${TOP_DIR}/bin/prettyprint.py ${_file})"
+    loggit ${PROG} INFO "Encrypting ${_file} (${_filesize}) to ${_file}.asc"
     loggit ${PROG} DEBUG "Using recipient key ${RECIPIENT}"
     ${GPG} ${GPG_OPTS} ${_file}
 done
