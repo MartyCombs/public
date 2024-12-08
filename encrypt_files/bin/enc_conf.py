@@ -5,7 +5,6 @@
 # Source Ctl   :
 #=============================================================================#
 
-import sys
 import os
 import configparser
 from mylog import MyLog
