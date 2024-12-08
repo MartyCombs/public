@@ -5,10 +5,7 @@
 # Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/bin/metadata.py
 #=============================================================================#
 
-import sys
 import os
-import time
-import datetime
 import hashlib
 from tqdm import tqdm
 import json
@@ -154,8 +151,8 @@ class MetaData(object):
             file_checksum
             file_checksum_method
         '''
-        if not os.path.isfile(self.filename):
-            raise Exception('File does not exist "{}"'.format(self.filename))
+        if not os.path.isfile(self.fullpath):
+            raise Exception('File does not exist "{}"'.format(self.fullpath))
         self.log.debug('Adding file stats')
         self.file_size_bytes = os.path.getsize(self.fullpath)
         self.file_checksum_method = 'sha512'
@@ -171,7 +168,7 @@ class MetaData(object):
         readbuff = 64 * 1024  # 64KB
         hasher = hashlib.sha512()
         if self.showprogress == True:
-            filesize = os.path.getsize(self.filename)
+            filesize = os.path.getsize(self.fullpath)
             progress_bar = tqdm(total=filesize,
                                 ascii=" >>>>>>>>>=",
                                 unit='B',
@@ -239,6 +236,7 @@ class MetaData(object):
         json_file_contents = json.dumps(self.metadata_filecontents,
                                         indent=4,
                                         sort_keys=True)
+        self.log.debug('Formatted file as\n{}'.format(json_file_contents))
         return json_file_contents
 
 
@@ -261,9 +259,11 @@ class MetaData(object):
         NOTE: The attribute fullpath is not set as only the basename for the
               original file sent to S3 is stored in the metadata file.
         '''
+        self.log.info('Reading "{}"'.format(path))
         with open(os.path.realpath(path), 'r') as f:
             md_contents = json.load(f)
         f.close()
+        self.log.debug('Read\n{}'.format(md_contents))
         self.metadata_filename = os.path.basename(path)
         # Top level key is the filename.
         for k1 in md_contents.keys():
