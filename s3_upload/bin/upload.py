@@ -68,8 +68,8 @@ def build_list(args=None, filelist=None):
         # Parse the metadata file to find the S3 destination URLs.  Everything
         # else is derived from these URLs.
         md.load(md_fullpath)
-        src_dst = md.get_s3_url()
-        md_dst = md.get_s3_url_metadata()
+        src_dst = md.s3_url
+        md_dst = md.s3_url_metadata
         _check_metadata_file(mdref=md, file=md_file)
 
         # The source file should be in the same directory as the metadata file.
@@ -98,7 +98,7 @@ def build_list(args=None, filelist=None):
 def _check_metadata_file(mdref=None, file=None):
     '''Confirm that the metadata file was correctly read.
     '''
-    if mdref.get_s3_url() == None or mdref.get_s3_url_metadata() == None:
+    if mdref.s3_url == None or mdref.s3_url_metadata == None:
         fileformat = json.dumps(mdref.MDINIT, indent=4)
         raise Exception('Metadata format for "{}" not understood.\n\n{}'.format(
             file, fileformat))
