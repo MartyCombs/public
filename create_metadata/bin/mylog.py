@@ -2,7 +2,7 @@
 #=============================================================================#
 # Project Docs :
 # Ticket       :
-# Source Ctl   : https://github.com/MartyCombs/public/blob/main/create_metadata/bin/mylog.py
+# Source Ctl   :
 #=============================================================================#
 import sys
 import logging
@@ -56,7 +56,6 @@ class MyLog(object):
             self.log.setLevel(getattr(logging, self.loglevel))
             self.log.addHandler(stderrh)
         return
-
 
 
 #=============================================================================#

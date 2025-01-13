@@ -30,7 +30,7 @@ class MyLog(object):
     '''
 
     FORMATTER_BASIC = logging.Formatter(
-        fmt='[%(asctime)s] %(hostname)s %(filename)s(%(process)d) %(levelname)s: %(message)s',
+        fmt='[%(asctime)s] %(hostname)s %(levelname)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S %z')
     FORMATTER_DEBUG = logging.Formatter(
         fmt='DEBUG: [%(asctime)s] %(hostname)s %(filename)s(%(process)d) %(levelname)s [%(name)s.%(funcName)s()] %(message)s',
